@@ -69,3 +69,27 @@ impl I2pSocket {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tcp() {
+        match I2pSocket::new(SocketType::Tcp, "localhost", 7656) {
+            Ok(_)  => assert!(true),
+            Err(e) => {
+                eprintln!("test_tcp: {:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_tcp_wrong_port() {
+        match I2pSocket::new(SocketType::Tcp, "localhost", 7655) {
+            Ok(_)  => assert!(false),
+            Err(e) => assert!(true),
+        }
+    }
+}
