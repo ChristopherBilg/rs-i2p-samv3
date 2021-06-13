@@ -1,5 +1,5 @@
 use std::net::{TcpStream};
-use std::io::{BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, Write};
 
 use crate::error::I2pError;
 
@@ -67,6 +67,38 @@ impl I2pSocket {
                 };
             }
         }
+    }
+
+    pub fn write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
+        match self.stype {
+            SocketType::Tcp => {
+                return self.tcp_write(buf);
+            },
+            SocketType::Udp => {
+                return self.udp_write(buf);
+            }
+        }
+    }
+
+    fn tcp_write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
+        match &mut self.tcp {
+            Some(tcp) => {
+                match tcp.writer.write(buf) {
+                    Ok(_)  => return Ok(()),
+                    Err(e) => {
+                        eprintln!("Failed to send TCP data: {}", e);
+                        return Err(I2pError::TcpStreamError);
+                    }
+                }
+            },
+            None => {
+                panic!();
+            }
+        }
+    }
+
+    fn udp_write(&self, buf: &[u8]) -> Result<(), I2pError> {
+        todo!();
     }
 }
 
