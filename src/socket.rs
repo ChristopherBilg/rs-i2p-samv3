@@ -19,16 +19,16 @@ struct TcpSocket {
 pub struct I2pSocket {
     stype: SocketType,
     tcp:   Option<TcpSocket>,
-    udp:   Option<UdpSocket>,
+    _udp:  Option<UdpSocket>,
 }
 
-fn udp_socket(host: &str, port: u16) -> Result<UdpSocket, I2pError> {
+fn udp_socket(_host: &str, _port: u16) -> Result<UdpSocket, I2pError> {
     todo!();
 }
 
 fn tcp_socket(host: &str, port: u16) -> Result<TcpSocket, I2pError> {
 
-    let mut stream = match TcpStream::connect(format!("{}:{}", host, port)) {
+    let stream = match TcpStream::connect(format!("{}:{}", host, port)) {
         Ok(v)  => v,
         Err(e) => {
             eprintln!("Failed to connect to the router: {}", e);
@@ -51,7 +51,7 @@ impl I2pSocket {
                     Ok(v) => return Ok(I2pSocket {
                         stype: SocketType::Tcp,
                         tcp:   Some(v),
-                        udp:   None,
+                        _udp:  None,
                     }),
                     Err(e) => return Err(e),
                 };
@@ -61,7 +61,7 @@ impl I2pSocket {
                     Ok(v) => return Ok(I2pSocket {
                         stype: SocketType::Udp,
                         tcp:   None,
-                        udp:   Some(v),
+                        _udp:  Some(v),
                     }),
                     Err(e) => return Err(e),
                 };
