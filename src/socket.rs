@@ -1,5 +1,6 @@
 use std::net::{TcpStream};
 use std::io::{BufReader, BufWriter, Write};
+use std::time::Duration;
 
 use crate::error::I2pError;
 
@@ -35,6 +36,14 @@ fn tcp_socket(host: &str, port: u16) -> Result<TcpSocket, I2pError> {
             return Err(I2pError::TcpConnectionError);
         }
     };
+
+    match stream.set_read_timeout(Some(Duration::from_millis(2000))) {
+        Ok(_)  => {},
+        Err(e) => {
+            eprintln!("Failed to set timeout for read operation: {}", e);
+            return Err(I2pError::Unknown);
+        }
+    }
 
     return Ok(TcpSocket {
         reader: BufReader::new(stream.try_clone().unwrap()),
