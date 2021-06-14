@@ -213,7 +213,7 @@ pub fn parse(data: &str, cmd: Command, sub_cmd: Option<Subcommand>) -> Result<Me
 mod tests {
     use super::*;
 
-    /// test that commands and subcommands are parsed correctly
+    // test that commands and subcommands are parsed correctly
     #[test]
     fn test_cmd_subcmd() {
 
@@ -245,7 +245,7 @@ mod tests {
         );
     }
 
-    /// test that both quoted and unquoted key/value pairs work
+    // test that both quoted and unquoted key/value pairs work
     #[test]
     fn test_quoted_unquoted() {
         let valid = Ok(("",
@@ -278,7 +278,7 @@ mod tests {
         );
     }
 
-    /// test that decimal is parsed correctly
+    // test that decimal is parsed correctly
     #[test]
     fn test_decimal() {
         assert_eq!(
@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn test_parse() {
 
-        /// parse valid response
+        // parse valid response
         assert_eq!(
             parse(
                 "HELLO REPLY RESULT=OK VERSION=3.1",
@@ -337,7 +337,7 @@ mod tests {
             })
         );
 
-        /// parse invalid response (subcommand missing)
+        // parse invalid response (subcommand missing)
         assert_eq!(
             parse(
                 "HELLO RESULT=OK VERSION=3.1",
@@ -347,7 +347,7 @@ mod tests {
             Err(I2pError::RouterError),
         );
 
-        /// parse invalid response (command and subcommand both missing)
+        // parse invalid response (command and subcommand both missing)
         assert_eq!(
             parse(
                 "3.1",
