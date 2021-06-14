@@ -170,3 +170,40 @@ fn parse_internal(input: &str) -> Res<&str, Message> {
 pub fn parse(data: &str, cmd: Command, sub_cmd: Option<Subcommand>) -> Result<Message, I2pError> {
     Err(I2pError::InvalidValue)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// test that commands and subcommands are parsed correctly
+    #[test]
+    fn test_cmd_subcmd() {
+
+        assert_eq!(
+            parse_internal("HELLO REPLY"),
+            Ok(("",
+                Message {
+                    cmd:     Command::Hello,
+                    sub_cmd: Some(Subcommand::Reply),
+                    values:  None,
+                }
+            ))
+        );
+
+        assert_eq!(
+            parse_internal("PING RESULT=OK"),
+            Ok(("",
+                Message {
+                    cmd:     Command::Ping,
+                    sub_cmd: None,
+                    values:  Some(vec![
+                        (
+                            "RESULT",
+                            "OK",
+                        ),
+                    ])
+                }
+            ))
+        );
+    }
+}
