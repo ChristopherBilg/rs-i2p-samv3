@@ -207,8 +207,6 @@ pub fn parse(data: &str, cmd: Command, sub_cmd: Option<Subcommand>) -> Result<Me
             return Err(I2pError::ParseError);
         }
     };
-
-    Err(I2pError::ParseError)
 }
 
 #[cfg(test)]
@@ -311,5 +309,52 @@ mod tests {
         assert_eq!(parsed.get_value("VERSION"), Some("3.1"));
         assert_eq!(parsed.get_value("ADDR"),    Some("google.com"));
         assert_eq!(parsed.get_value("TEST"),    None);
+    }
+
+    #[test]
+    fn test_parse() {
+
+        /// parse valid response
+        assert_eq!(
+            parse(
+                "HELLO REPLY RESULT=OK VERSION=3.1",
+                Command::Hello,
+                Some(Subcommand::Reply)
+            ),
+            Ok(Message {
+                cmd:     Command::Hello,
+                sub_cmd: Some(Subcommand::Reply),
+                values:  Some(vec![
+                    (
+                        "RESULT",
+                        "OK",
+                    ),
+                    (
+                        "VERSION",
+                        "3.1",
+                    ),
+                ]),
+            })
+        );
+
+        /// parse invalid response (subcommand missing)
+        assert_eq!(
+            parse(
+                "HELLO RESULT=OK VERSION=3.1",
+                Command::Hello,
+                Some(Subcommand::Reply)
+            ),
+            Err(I2pError::RouterError),
+        );
+
+        /// parse invalid response (command and subcommand both missing)
+        assert_eq!(
+            parse(
+                "3.1",
+                Command::Hello,
+                Some(Subcommand::Reply)
+            ),
+            Err(I2pError::ParseError),
+        );
     }
 }

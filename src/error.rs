@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum I2pError {
     Unknown,
     TcpConnectionError,
