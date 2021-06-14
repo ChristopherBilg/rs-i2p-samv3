@@ -1,6 +1,7 @@
 [package]
-name = "rs-i2p-samv3"
+name = "ri2p"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
+nom = "6.1.2"
