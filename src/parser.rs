@@ -206,4 +206,37 @@ mod tests {
             ))
         );
     }
+
+    /// test that both quoted and unquoted key/value pairs work
+    #[test]
+    fn test_quoted_unquoted() {
+        let valid = Ok(("",
+            Message {
+                cmd: Command::Hello,
+                sub_cmd: Some(
+                    Subcommand::Reply,
+                ),
+                values: Some(vec![
+                    (
+                        "RESULT",
+                        "OK",
+                    ),
+                    (
+                        "MESSAGE",
+                        "test hello 123",
+                    ),
+                ]),
+            },
+        ));
+
+        assert_eq!(
+            parse_internal("HELLO REPLY RESULT=\"OK\" MESSAGE=\"test hello 123\""),
+            valid
+        );
+
+        assert_eq!(
+            parse_internal("HELLO REPLY RESULT=OK MESSAGE=\"test hello 123\""),
+            valid
+        );
+    }
 }
