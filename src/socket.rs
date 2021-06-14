@@ -79,6 +79,10 @@ impl I2pSocket {
     }
 
     pub fn write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
+        if buf.len() == 0 {
+            return Err(I2pError::InvalidValue);
+        }
+
         match self.stype {
             SocketType::Tcp => {
                 return self.tcp_write(buf);
