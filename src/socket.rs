@@ -97,7 +97,10 @@ impl I2pSocket {
         match &mut self.tcp {
             Some(tcp) => {
                 match tcp.writer.write(buf) {
-                    Ok(_)  => return Ok(()),
+                    Ok(_)  => {
+                        tcp.writer.flush().unwrap();
+                        return Ok(());
+                    },
                     Err(e) => {
                         eprintln!("Failed to send TCP data: {}", e);
                         return Err(I2pError::TcpStreamError);
