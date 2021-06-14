@@ -61,7 +61,17 @@ pub struct Message<'a> {
 
 impl Message<'_> {
     pub fn get_value(&self, key: &str) -> Option<&str> {
-        None
+        match &self.values {
+            Some(values) => {
+                for (k, v) in values {
+                    if *k == key {
+                        return Some(v);
+                    }
+                }
+                None
+            },
+            None => None,
+        }
     }
 }
 
@@ -91,8 +101,6 @@ pub fn keyvalue<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
         ErrorKind::AlphaNumeric,
     )
 }
-
-
 
 fn whitespace<'a>(i: &'a str) -> Res<&'a str, &'a str> {
     take_while(move |c|  " \t\r\n".contains(c))(i)
