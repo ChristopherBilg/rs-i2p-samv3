@@ -191,7 +191,24 @@ fn parse_internal(input: &str) -> Res<&str, Message> {
 }
 
 pub fn parse(data: &str, cmd: Command, sub_cmd: Option<Subcommand>) -> Result<Message, I2pError> {
-    Err(I2pError::InvalidValue)
+
+    let parsed = match parse_internal(data) {
+        Ok(v) => {
+            if v.1.cmd == cmd && v.1.sub_cmd == sub_cmd {
+                return Ok(v.1);
+            }
+
+            eprintln!("Did not receive expected reply from router: {:#?} {:#?}",
+                      v.1.cmd, v.1.sub_cmd);
+            return Err(I2pError::RouterError);
+        },
+        Err(e) => {
+            eprintln!("Failed to parse response: {:#?}", e);
+            return Err(I2pError::ParseError);
+        }
+    };
+
+    Err(I2pError::ParseError)
 }
 
 #[cfg(test)]
