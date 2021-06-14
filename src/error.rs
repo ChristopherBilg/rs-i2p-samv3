@@ -6,4 +6,5 @@ pub enum I2pError {
     NotSupported,
     InvalidValue,
     RouterError,
+    ParseError,
 }

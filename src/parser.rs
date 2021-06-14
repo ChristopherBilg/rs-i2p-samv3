@@ -254,4 +254,28 @@ mod tests {
             valid
         );
     }
+
+    /// test that decimal is parsed correctly
+    #[test]
+    fn test_decimal() {
+        assert_eq!(
+            parse_internal("HELLO VERSION=3.1 ADDR=google.com"),
+            Ok(("",
+                Message {
+                    cmd:     Command::Hello,
+                    sub_cmd: None,
+                    values:  Some(vec![
+                        (
+                            "VERSION",
+                            "3.1"
+                        ),
+                        (
+                            "ADDR",
+                            "google.com",
+                        ),
+                    ]),
+                }
+            ))
+        );
+    }
 }
