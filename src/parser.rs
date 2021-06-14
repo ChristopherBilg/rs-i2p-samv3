@@ -66,7 +66,7 @@ impl Message<'_> {
 }
 
 // TODO add unicode support
-pub fn keyvalue<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
+pub fn keyvalue_long<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     T: InputTakeAtPosition,
     <T as InputTakeAtPosition>::Item: AsChar,
 {
@@ -79,12 +79,27 @@ pub fn keyvalue<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     )
 }
 
+pub fn keyvalue<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
+    T: InputTakeAtPosition,
+    <T as InputTakeAtPosition>::Item: AsChar,
+{
+    i.split_at_position1_complete(
+        |item| {
+            let char_item = item.as_char();
+            !(char_item == '.') && !char_item.is_alphanum()
+        },
+        ErrorKind::AlphaNumeric,
+    )
+}
+
+
+
 fn whitespace<'a>(i: &'a str) -> Res<&'a str, &'a str> {
     take_while(move |c|  " \t\r\n".contains(c))(i)
 }
 
 fn parse_str<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
-    escaped(keyvalue, '\\', one_of("\"n\\"))(i)
+    escaped(keyvalue_long, '\\', one_of("\"n\\"))(i)
 }
 
 fn key<'a>(i: &'a str) -> Res<&'a str, &'a str> {
@@ -92,7 +107,7 @@ fn key<'a>(i: &'a str) -> Res<&'a str, &'a str> {
 }
 
 fn value<'a>(i: &'a str) -> Res<&'a str, &'a str> {
-    escaped(alphanumeric1, '\\', one_of("\"n\\"))(i)
+    escaped(keyvalue, '\\', one_of("\"n\\"))(i)
 }
 
 fn value_quoted<'a>(i: &'a str) -> Res<&'a str, &'a str> {
