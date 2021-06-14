@@ -286,4 +286,13 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn test_get_value() {
+        let parsed = parse_internal("HELLO VERSION=3.1 ADDR=google.com").unwrap().1;
+
+        assert_eq!(parsed.get_value("VERSION"), Some("3.1"));
+        assert_eq!(parsed.get_value("ADDR"),    Some("google.com"));
+        assert_eq!(parsed.get_value("TEST"),    None);
+    }
 }
