@@ -175,7 +175,44 @@ mod tests {
     fn test_tcp_wrong_port() {
         match I2pSocket::new(SocketType::Tcp, "localhost", 7655) {
             Ok(_)  => assert!(false),
-            Err(e) => assert!(true),
+            Err(_) => assert!(true),
+        }
+    }
+
+    #[test]
+    fn test_tcp_send() {
+        match I2pSocket::new(SocketType::Tcp, "localhost", 7656) {
+            Ok(mut socket)  => {
+                match socket.write("PING".as_bytes()) {
+                    Ok(_)  => assert!(true),
+                    Err(e) => {
+                        eprintln!("test_tcp_send: {:#?}", e);
+                        assert!(false);
+                    }
+                }
+                // TODO try to send empty buffer
+            },
+            Err(_) => {
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_tcp_send_empty() {
+        match I2pSocket::new(SocketType::Tcp, "localhost", 7656) {
+            Ok(mut socket)  => {
+                let vec: Vec<u8> = Vec::new();
+
+                match socket.write(&vec) {
+                    Ok(_)  => assert!(false),
+                    Err(_) => assert!(true),
+                }
+                // TODO try to send empty buffer
+            },
+            Err(_) => {
+                assert!(false);
+            }
         }
     }
 }
