@@ -7,4 +7,5 @@ pub enum I2pError {
     InvalidValue,
     RouterError,
     ParseError,
+    DoesntExist,
 }
