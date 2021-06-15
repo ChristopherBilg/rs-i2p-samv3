@@ -37,7 +37,7 @@ fn tcp_socket(host: &str, port: u16) -> Result<TcpSocket, I2pError> {
         }
     };
 
-    match stream.set_read_timeout(Some(Duration::from_millis(2000))) {
+    match stream.set_read_timeout(Some(Duration::from_millis(2 * 60 * 1000))) {
         Ok(_)  => {},
         Err(e) => {
             eprintln!("Failed to set timeout for read operation: {}", e);
