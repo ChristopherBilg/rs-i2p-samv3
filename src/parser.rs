@@ -360,4 +360,29 @@ mod tests {
             Err(I2pError::ParseError),
         );
     }
+
+        #[test]
+        fn test_base64() {
+            assert_eq!(
+                parse(
+                    "DEST REPLY PUB=B9pegw5QkKt2NcN~OxyUrtrZBprhmZHeZRRE33V3s-RWd7Rhg2lerMpByNwM9S5Z3I96SPfFz5thlvzP7JmnXPT85IcAJ2eYg~e9EgipIfg4os49lBzrukQ3e~wJyIpkooSuV3rEyXR9zk9JlNBxmDJnYyRxYZedOK9sT8~ScKReHRDNC~Gb6RyEnlR4RItWVWAuUCDegoLxUh~idZj704MgHE5zio1QTbxMsgBumvXxNmDf5Irc9YpTnfvuKiKc4uOEyzN96t~zkgVMCz4ttMchzJSeqWRxvoqmHTkjuSrhJ0vE3ON-UVn1LU3e-9jVKq-GDj3bUTEnSC6WfKcivcypmv-s7DkkezFdpu3HEBYtcjkJf~AFnpXCL1S1F6gUoUbsLlCl9PDGpXYMBhS0rrLfOj4dCiAZC9zbTo3OTp60dwg5be4fXTW~CeCEXwGzlTZlc~4P~rYfOQ8Fzs5vprTsD79gKYlCs9kPwCDJL2Tfv-ggVLKXber32f5OHUmfBQAEAAcAAA== PRIV=PUcsXtuhfPem9Fmf--eHA~nLHXzk9xn21cK5LOSW6H3dy9chBXveC2jeiGo6ERsX9WhGpMwHYu6waNJtHUm6GKKuDrK9nTTyxX8DSjCXKyseNzvZmgjuHVieQzLlTBqOAMkNvTzKUnawuIL3u~PtLTHoqPRllr13g3x-vG5K8Ll38UrHsq6prf7TNN12SkyUJPg0SvM-Fy5sd8hg-n~TAut5YA2dU0-bsvSTycBdBULzfsz1QgmLdVwzi~zFKCdjoPDiwsyVSAz2votd2U6oPXy-qiGaPZAun3tEfz7pFOVC94ZWW~166O~aLsNfVdEhAyW0z1RrTx-zhyynAY64FeGwLJyr010u7aXopXfhCvb2QzU4tSSHEAGXqzQbcbB0ztdHviZHwJpP32B-ZE3sfpEWLE9h3yPtiWG7qYyyax6sN44GfSIAoeq1M0O4hJ3whA~yI5dtzz6Orf49Y2h-53uvHvpVIisGfzXbesvP71PoN-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
+                    Command::Dest,
+                    Some(Subcommand::Reply)
+                ),
+                Ok(Message {
+                    cmd:     Command::Dest,
+                    sub_cmd: Some(Subcommand::Reply),
+                    values:  Some(vec![
+                        (
+                            "PUB",
+                            "B9pegw5QkKt2NcN~OxyUrtrZBprhmZHeZRRE33V3s-RWd7Rhg2lerMpByNwM9S5Z3I96SPfFz5thlvzP7JmnXPT85IcAJ2eYg~e9EgipIfg4os49lBzrukQ3e~wJyIpkooSuV3rEyXR9zk9JlNBxmDJnYyRxYZedOK9sT8~ScKReHRDNC~Gb6RyEnlR4RItWVWAuUCDegoLxUh~idZj704MgHE5zio1QTbxMsgBumvXxNmDf5Irc9YpTnfvuKiKc4uOEyzN96t~zkgVMCz4ttMchzJSeqWRxvoqmHTkjuSrhJ0vE3ON-UVn1LU3e-9jVKq-GDj3bUTEnSC6WfKcivcypmv-s7DkkezFdpu3HEBYtcjkJf~AFnpXCL1S1F6gUoUbsLlCl9PDGpXYMBhS0rrLfOj4dCiAZC9zbTo3OTp60dwg5be4fXTW~CeCEXwGzlTZlc~4P~rYfOQ8Fzs5vprTsD79gKYlCs9kPwCDJL2Tfv-ggVLKXber32f5OHUmfBQAEAAcAAA==",
+                        ),
+                        (
+                            "PRIV",
+                            "PUcsXtuhfPem9Fmf--eHA~nLHXzk9xn21cK5LOSW6H3dy9chBXveC2jeiGo6ERsX9WhGpMwHYu6waNJtHUm6GKKuDrK9nTTyxX8DSjCXKyseNzvZmgjuHVieQzLlTBqOAMkNvTzKUnawuIL3u~PtLTHoqPRllr13g3x-vG5K8Ll38UrHsq6prf7TNN12SkyUJPg0SvM-Fy5sd8hg-n~TAut5YA2dU0-bsvSTycBdBULzfsz1QgmLdVwzi~zFKCdjoPDiwsyVSAz2votd2U6oPXy-qiGaPZAun3tEfz7pFOVC94ZWW~166O~aLsNfVdEhAyW0z1RrTx-zhyynAY64FeGwLJyr010u7aXopXfhCvb2QzU4tSSHEAGXqzQbcbB0ztdHviZHwJpP32B-ZE3sfpEWLE9h3yPtiWG7qYyyax6sN44GfSIAoeq1M0O4hJ3whA~yI5dtzz6Orf49Y2h-53uvHvpVIisGfzXbesvP71PoN-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
+                        ),
+                    ]),
+                })
+            );
+        }
 }
