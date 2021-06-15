@@ -1,13 +1,12 @@
 use nom::{
     branch::alt,
     bytes::complete::{escaped, tag, take_while},
-    character::complete::{alpha1, alphanumeric1, one_of, char},
+    character::complete::{alphanumeric1, one_of, char},
     combinator::{opt, cut},
-    error::{context, ErrorKind, ContextError, ParseError, VerboseError},
-    multi::{count, many0, many1, many_m_n},
-    number::complete::double,
-    sequence::{preceded, separated_pair, terminated, tuple},
-    AsChar, Err as NomErr, IResult, InputTakeAtPosition,
+    error::{context, ErrorKind, ParseError, VerboseError},
+    multi::many0,
+    sequence::{preceded, terminated, tuple},
+    AsChar, IResult, InputTakeAtPosition,
 };
 use crate::error::I2pError;
 
@@ -83,7 +82,10 @@ pub fn keyvalue_long<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     i.split_at_position1_complete(
         |item| {
             let char_item = item.as_char();
-            !(char_item == '-') && !char_item.is_alphanum() && !(char_item == '.') && !(char_item == ' ')
+            !(char_item == '-') && !char_item.is_alphanum() && !(char_item == '.') &&
+            !(char_item == ' ') && !(char_item == '=') && !(char_item == '~') &&
+            !(char_item == '_')
+
         },
         ErrorKind::AlphaNumeric,
     )
@@ -96,7 +98,8 @@ pub fn keyvalue<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     i.split_at_position1_complete(
         |item| {
             let char_item = item.as_char();
-            !(char_item == '.') && !char_item.is_alphanum()
+            !(char_item == '.') && !char_item.is_alphanum() && !(char_item == '-') &&
+            !(char_item == '=') && !(char_item == '~') && !(char_item == '_')
         },
         ErrorKind::AlphaNumeric,
     )
@@ -192,7 +195,7 @@ fn parse_internal(input: &str) -> Res<&str, Message> {
 
 pub fn parse(data: &str, cmd: Command, sub_cmd: Option<Subcommand>) -> Result<Message, I2pError> {
 
-    let parsed = match parse_internal(data) {
+    match parse_internal(data) {
         Ok(v) => {
             if v.1.cmd == cmd && v.1.sub_cmd == sub_cmd {
                 return Ok(v.1);
