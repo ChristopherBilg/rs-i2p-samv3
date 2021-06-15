@@ -1,5 +1,5 @@
 use std::net::{TcpStream};
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write, BufRead};
 use std::time::Duration;
 
 use crate::error::I2pError;
@@ -113,7 +113,45 @@ impl I2pSocket {
         }
     }
 
-    fn udp_write(&self, buf: &[u8]) -> Result<(), I2pError> {
+    fn udp_write(&self, _buf: &[u8]) -> Result<(), I2pError> {
+        todo!();
+    }
+
+    pub fn read(&mut self, buf: &mut String) -> Result<(), I2pError> {
+        match self.stype {
+            SocketType::Tcp => {
+                return self.tcp_read(buf);
+            },
+            SocketType::Udp => {
+                return self.udp_read(buf);
+            }
+        }
+    }
+
+    fn tcp_read(&mut self, buf: &mut String) -> Result<(), I2pError> {
+        match &mut self.tcp {
+            Some(tcp) => {
+                match tcp.reader.read_line(buf) {
+                    Ok(nread)  => {
+                        if nread == 0 {
+                            eprintln!("Received 0 bytes from the router");
+                            return Err(I2pError::TcpStreamError);
+                        }
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to receive TCP data: {}", e);
+                        return Err(I2pError::TcpStreamError);
+                    }
+                }
+            },
+            None => {
+                panic!();
+            }
+        }
+    }
+
+    fn udp_read(&self, _buf: &mut String) -> Result<(), I2pError> {
         todo!();
     }
 }
