@@ -3,3 +3,4 @@ pub mod socket;
 pub mod parser;
 pub mod cmd;
 pub mod proto;
+pub mod session;
