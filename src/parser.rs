@@ -57,7 +57,7 @@ impl From<&str> for Subcommand {
 }
 
 // TODO add support for this enum
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, PartialEq)]
 pub enum ValueType {
     Str(String),
     Double(f64),
