@@ -69,7 +69,7 @@ fn handshake_internal(socket: &mut I2pSocket, msg: &str) -> Result<(), I2pError>
     }
 
     let mut data = String::with_capacity(128);
-    match socket.read(&mut data) {
+    match socket.read_line(&mut data) {
         Ok(_) => { },
         Err(e) => {
             eprintln!("Failed to read response from router: {:#?}", e);
