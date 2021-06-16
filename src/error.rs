@@ -8,4 +8,5 @@ pub enum I2pError {
     RouterError,
     ParseError,
     DoesntExist,
+    Duplicate,
 }
