@@ -1,19 +1,16 @@
 use crate::error::I2pError;
 use crate::socket::I2pSocket;
 use crate::parser::{Command, Subcommand, parse};
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct KeyPair {
-}
+use crate::cmd::aux;
 
 /// Parse and validate router's SAMv3-compatible response
 ///
-/// If the message is valid, return the received keypair to caller
+/// If the message is valid, extract and return the keypair
 ///
 /// # Arguments
 /// `response` - Router's response in text format
 ///
-fn parse_response(response: &str) -> Result<(String, String), I2pError> {
+fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 
     let parsed = match parse(response, Command::Dest, Some(Subcommand::Reply)) {
         Ok(v)  => v,
@@ -26,7 +23,7 @@ fn parse_response(response: &str) -> Result<(String, String), I2pError> {
     let pubkey = match parsed.get_value("PUB") {
         Some(v) => v.to_string(),
         None    => {
-            eprintln!("Router's respone did not contain PUB!");
+            eprintln!("Router's response did not contain PUB!");
             return Err(I2pError::InvalidValue);
         }
     };
@@ -39,42 +36,7 @@ fn parse_response(response: &str) -> Result<(String, String), I2pError> {
         }
     };
 
-    Ok((pubkey, privkey))
-}
-
-/// gen_keys_internal() sends the specified message to the router and reads a response
-/// with a timeout.
-///
-/// gen_keys_internal() expects, as the spec requires, that the message the router sends
-/// ends in a newline (\n)
-///
-/// When the message has been read, it's parsed and validated
-///
-/// # Arguments
-///
-/// `socket` - I2pSocket object created by the caller.
-/// `msg` - SAMv3 message that is sent to the router
-///
-fn generate_internal(socket: &mut I2pSocket, msg: &str) -> Result<(String, String), I2pError> {
-
-    match socket.write(msg.as_bytes()) {
-        Ok(_)  => {},
-        Err(e) => {
-            eprintln!("Failed to send DEST command to the router: {:#?}", e);
-            return Err(I2pError::TcpStreamError);
-        }
-    }
-
-    let mut data = String::with_capacity(128);
-    match socket.read_line(&mut data) {
-        Ok(_) => { },
-        Err(e) => {
-            eprintln!("Failed to read response from router: {:#?}", e);
-            return Err(e);
-        }
-    }
-
-    parse_response(&data)
+    Ok(vec![(pubkey, privkey)])
 }
 
 /// Handshake with the router to establish initial connection
@@ -84,7 +46,12 @@ fn generate_internal(socket: &mut I2pSocket, msg: &str) -> Result<(String, Strin
 /// `socket` - I2pSocket object created by the caller
 ///
 pub fn generate(socket: &mut I2pSocket) -> Result<(String, String), I2pError> {
-    generate_internal(socket, &format!("DEST GENERATE SIGNATURE_TYPE=7\n"))
+    let msg = format!("DEST GENERATE SIGNATURE_TYPE=7\n");
+
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(v)  => Ok(v[0].clone()),
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg(test)]

@@ -1,13 +1,9 @@
 use crate::error::I2pError;
 use crate::socket::I2pSocket;
 use crate::parser::{Command, Subcommand, parse};
+use crate::cmd::aux;
 
-/// Parse and validate router's response to NAMING message
-///
-/// # Arguments
-/// `response` - Router's response in text format
-///
-fn parse_response(response: &str) -> Result<(String, String), I2pError> {
+fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 
     let parsed = match parse(response, Command::Naming, Some(Subcommand::Reply)) {
         Ok(v)  => v,
@@ -25,7 +21,7 @@ fn parse_response(response: &str) -> Result<(String, String), I2pError> {
                 "KEY_NOT_FOUND" => {
                     return Err(I2pError::DoesntExist);
                 },
-                "INVALID_KEY" | "INVALID" => { // TODO i2pd only?
+                "INVALID_KEY" | "INVALID" => {
                     return Err(I2pError::InvalidValue);
                 }
                 _ => {
@@ -44,45 +40,15 @@ fn parse_response(response: &str) -> Result<(String, String), I2pError> {
         None    => "".to_string(),
     };
 
-
     match parsed.get_value("NAME") {
         Some(v) => {
-            return Ok((v.to_string(), value));
+            return Ok(vec![(v.to_string(), value)]);
         },
         None => {
             eprintln!("Router's respone did not contain NAME!");
             return Err(I2pError::InvalidValue);
         }
     };
-}
-
-/// TODO
-///
-/// # Arguments
-///
-/// `socket` - I2pSocket object created by the caller.
-/// `msg` - SAMv3 message that is sent to the router
-///
-fn lookup_internal(socket: &mut I2pSocket, msg: &str) -> Result<(String, String), I2pError> {
-
-    match socket.write(msg.as_bytes()) {
-        Ok(_)  => {},
-        Err(e) => {
-            eprintln!("Failed to send NAMING command to the router: {:#?}", e);
-            return Err(I2pError::TcpStreamError);
-        }
-    }
-
-    let mut data = String::with_capacity(128);
-    match socket.read_line(&mut data) {
-        Ok(_) => { },
-        Err(e) => {
-            eprintln!("Failed to read response from router: {:#?}", e);
-            return Err(e);
-        }
-    }
-
-    parse_response(&data)
 }
 
 /// Handshake with the router to establish initial connection
@@ -92,7 +58,12 @@ fn lookup_internal(socket: &mut I2pSocket, msg: &str) -> Result<(String, String)
 /// `socket` - I2pSocket object created by the caller
 ///
 pub fn lookup(socket: &mut I2pSocket, addr: &str) -> Result<(String, String), I2pError> {
-    lookup_internal(socket, &format!("NAMING LOOKUP NAME={}\n", addr))
+    let msg = format!("NAMING LOOKUP NAME={}\n", addr);
+
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(v)  => Ok(v[0].clone()),
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg(test)]

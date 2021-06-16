@@ -2,6 +2,7 @@ use crate::error::I2pError;
 use crate::socket::I2pSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::session::SessionType;
+use crate::cmd::aux;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct KeyPair {
@@ -14,10 +15,10 @@ pub struct KeyPair {
 /// # Arguments
 /// `response` - Router's response in text format
 ///
-fn parse_response(response: &str) -> Result<(), I2pError> {
+fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 
     match parse(response, Command::Session, Some(Subcommand::Status)) {
-        Ok(_)  => Ok(()),
+        Ok(_)  => Ok(Vec::new()),
         Err(e) => {
             eprintln!("Failed to parse response: {:#?}", e);
             return Err(I2pError::InvalidValue);
@@ -25,29 +26,6 @@ fn parse_response(response: &str) -> Result<(), I2pError> {
     }
 }
 
-/// TODO
-fn create_internal(socket: &mut I2pSocket, msg: &str) -> Result<(), I2pError> {
-    match socket.write(msg.as_bytes()) {
-        Ok(_)  => { },
-        Err(e) => {
-            eprintln!("Failed to send DEST command to the router: {:#?}", e);
-            return Err(I2pError::TcpStreamError);
-        }
-    }
-
-    let mut data = String::new();
-    match socket.read_line(&mut data) {
-        Ok(_)  => { },
-        Err(e) => {
-            eprintln!("Failed to read response from router: {:#?}", e);
-            return Err(e);
-        }
-    }
-
-    parse_response(&data)
-}
-
-/// TODO
 pub fn create(socket: &mut I2pSocket, stype: &SessionType, nick: &str) -> Result<(), I2pError> {
 
     let msg = match stype {
@@ -57,7 +35,10 @@ pub fn create(socket: &mut I2pSocket, stype: &SessionType, nick: &str) -> Result
         _ => todo!(),
     };
 
-    create_internal(socket, &msg)
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(_)  => Ok(()),
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg(test)]
