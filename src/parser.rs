@@ -16,13 +16,21 @@ type Res<T, U> = IResult<T, U, VerboseError<T>>;
 pub enum Command {
     Hello,
     Ping,
+    Session,
+    Dest,
+    Naming,
+    Stream,
 }
 
 impl From<&str> for Command {
     fn from(i: &str) -> Self {
-        match i {
-            "HELLO" => Command::Hello,
-            "PING"  => Command::Ping,
+        match &i[..] {
+            "HELLO"   => Command::Hello,
+            "PING"    => Command::Ping,
+            "SESSION" => Command::Session,
+            "DEST"    => Command::Dest,
+            "NAMING"  => Command::Naming,
+            "STREAM"  => Command::Stream,
             _ => unimplemented!("Command {} not supported", i),
         }
     }
@@ -30,13 +38,19 @@ impl From<&str> for Command {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Subcommand {
-    Reply
+    Reply,
+    Create,
+    Status,
+    Lookup,
 }
 
 impl From<&str> for Subcommand {
     fn from(i: &str) -> Self {
         match i {
-            "REPLY" => Subcommand::Reply,
+            "REPLY"  => Subcommand::Reply,
+            "CREATE" => Subcommand::Create,
+            "STATUS" => Subcommand::Status,
+            "LOOKUP" => Subcommand::Lookup,
             _ => unimplemented!("Subcommand {} not supported", i),
         }
     }
@@ -131,7 +145,11 @@ fn value_quoted<'a>(i: &'a str) -> Res<&'a str, &'a str> {
 fn command(input: &str) -> Res<&str, Command> {
     context(
         "command",
-        alt((tag("HELLO"), tag("PING"))),
+        alt((
+            tag("HELLO"),  tag("PING"),
+            tag("DEST"),   tag("SESSION"),
+            tag("NAMING"), tag("STREAM"),
+        )),
     )(input)
     .map(|(next_input, res)| (next_input, res.into()))
 }
@@ -139,7 +157,10 @@ fn command(input: &str) -> Res<&str, Command> {
 fn sub_command(input: &str) -> Res<&str, Subcommand> {
     context(
         "sub_command",
-        alt((tag("REPLY"), tag("PING"))), // TODO remove ping
+        alt((
+            tag("REPLY"),  tag("CREATE"),
+            tag("STATUS"), tag("LOOKUP"),
+        )),
     )(input)
     .map(|(next_input, res)| (next_input, res.into()))
 }
