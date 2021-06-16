@@ -1,5 +1,5 @@
 use std::net::{TcpStream};
-use std::io::{BufReader, BufWriter, Write, BufRead};
+use std::io::{BufReader, BufWriter, Write, BufRead, Read};
 use std::time::Duration;
 
 use crate::error::I2pError;
@@ -91,17 +91,6 @@ impl I2pSocket {
             return Err(I2pError::InvalidValue);
         }
 
-        match self.stype {
-            SocketType::Tcp => {
-                return self.tcp_write(buf);
-            },
-            SocketType::Udp => {
-                return self.udp_write(buf);
-            }
-        }
-    }
-
-    fn tcp_write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
         match &mut self.tcp {
             Some(tcp) => {
                 match tcp.writer.write(buf) {
@@ -121,31 +110,17 @@ impl I2pSocket {
         }
     }
 
-    fn udp_write(&self, _buf: &[u8]) -> Result<(), I2pError> {
-        todo!();
-    }
-
-    pub fn read(&mut self, buf: &mut String) -> Result<(), I2pError> {
-        match self.stype {
-            SocketType::Tcp => {
-                return self.tcp_read(buf);
-            },
-            SocketType::Udp => {
-                return self.udp_read(buf);
-            }
-        }
-    }
-
-    fn tcp_read(&mut self, buf: &mut String) -> Result<(), I2pError> {
+    /// See documentation for BufReader::read()
+    pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, I2pError> {
         match &mut self.tcp {
             Some(tcp) => {
-                match tcp.reader.read_line(buf) {
+                match tcp.reader.read(buf) {
                     Ok(nread)  => {
                         if nread == 0 {
                             eprintln!("Received 0 bytes from the router");
                             return Err(I2pError::TcpStreamError);
                         }
-                        return Ok(());
+                        return Ok(nread);
                     }
                     Err(e) => {
                         eprintln!("Failed to receive TCP data: {}", e);
@@ -159,11 +134,76 @@ impl I2pSocket {
         }
     }
 
-    fn udp_read(&self, _buf: &mut String) -> Result<(), I2pError> {
-        todo!();
+    /// See documentation for BufReader::read_line()
+    pub fn read_line(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+        match &mut self.tcp {
+            Some(tcp) => {
+                match tcp.reader.read_line(buf) {
+                    Ok(nread)  => {
+                        if nread == 0 {
+                            eprintln!("Received 0 bytes from the router");
+                            return Err(I2pError::TcpStreamError);
+                        }
+                        return Ok(nread);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to receive TCP data: {}", e);
+                        return Err(I2pError::TcpStreamError);
+                    }
+                }
+            },
+            None => {
+                panic!();
+            }
+        }
+    }
+
+    /// See documentation for Read::read_to_string()
+    pub fn read_to_string(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+        match &mut self.tcp {
+            Some(tcp) => {
+                match tcp.reader.read_to_string(buf) {
+                    Ok(nread)  => {
+                        if nread == 0 {
+                            eprintln!("Received 0 bytes from the router");
+                            return Err(I2pError::TcpStreamError);
+                        }
+                        return Ok(nread);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to receive TCP data: {}", e);
+                        return Err(I2pError::TcpStreamError);
+                    }
+                }
+            },
+            None => {
+                panic!();
+            }
+        }
+    }
+
+    /// See documentation for Read::read_exact()
+    pub fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), I2pError> {
+        match &mut self.tcp {
+            Some(tcp) => {
+                match tcp.reader.read_exact(buf) {
+                    Ok(_) => {
+                        return Ok(());
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to receive TCP data: {}", e);
+                        return Err(I2pError::TcpStreamError);
+                    }
+                }
+            },
+            None => {
+                panic!();
+            }
+        }
     }
 }
 
+// TODO add tests
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,7 +238,6 @@ mod tests {
                         assert!(false);
                     }
                 }
-                // TODO try to send empty buffer
             },
             Err(_) => {
                 assert!(false);
@@ -216,7 +255,6 @@ mod tests {
                     Ok(_)  => assert!(false),
                     Err(_) => assert!(true),
                 }
-                // TODO try to send empty buffer
             },
             Err(_) => {
                 assert!(false);
