@@ -41,8 +41,7 @@ impl I2pStream {
     /// `addr` - an I2P address (normal or b32), or a public key of remote peer
     ///
     pub fn connect(&mut self, addr: &str) -> Result<(), I2pError> {
-
-        match stream::connect(&mut self.socket, &addr, &self._session.nick) {
+        match stream::connect(&mut self.socket, &self._session.nick, &addr) {
             Ok(_)  => { },
             Err(e) => return Err(e),
         }

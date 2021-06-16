@@ -32,15 +32,16 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
-/// TODO
+/// Connect to a remote peer using a destination address
 ///
 /// # Arguments
 ///
 /// `socket` - I2pSocket object created by the caller
 /// `nick` - Nickname of the client, generated during I2pSession creation
+/// `host` - Destination address of the remote peer (normal or a b32 address, or a public key)
 ///
 pub fn connect(socket: &mut I2pSocket, nick: &str, host: &str) -> Result<(), I2pError> {
-    let msg = format!("STREAM CONNECT ID={} DESTINATION={} SILENT=false\n", host, nick);
+    let msg = format!("STREAM CONNECT ID={} DESTINATION={} SILENT=false\n", nick, host);
 
     match aux::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
