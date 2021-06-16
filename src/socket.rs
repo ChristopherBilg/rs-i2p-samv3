@@ -3,6 +3,7 @@ use std::io::{BufReader, BufWriter, Write, BufRead};
 use std::time::Duration;
 
 use crate::error::I2pError;
+use crate::cmd::hello;
 
 pub enum SocketType {
     Tcp,
@@ -54,27 +55,34 @@ fn tcp_socket(host: &str, port: u16) -> Result<TcpSocket, I2pError> {
 impl I2pSocket {
 
     pub fn new(stype: SocketType, host: &str, port: u16) -> Result<I2pSocket, I2pError> {
+        let mut socket;
+
         match stype {
             SocketType::Tcp => {
-                match tcp_socket(host, port) {
-                    Ok(v) => return Ok(I2pSocket {
+                socket = match tcp_socket(host, port) {
+                    Ok(v) => I2pSocket {
                         stype: SocketType::Tcp,
                         tcp:   Some(v),
                         _udp:  None,
-                    }),
+                    },
                     Err(e) => return Err(e),
                 };
             },
             SocketType::Udp => {
-                match udp_socket(host, port) {
-                    Ok(v) => return Ok(I2pSocket {
+                socket = match udp_socket(host, port) {
+                    Ok(v) => I2pSocket {
                         stype: SocketType::Udp,
                         tcp:   None,
                         _udp:  Some(v),
-                    }),
+                    },
                     Err(e) => return Err(e),
                 };
             }
+        };
+
+        match hello::handshake(&mut socket) {
+            Ok(_)  => { Ok(socket) },
+            Err(e) => return Err(e),
         }
     }
 
