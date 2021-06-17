@@ -52,32 +52,47 @@ fn tcp_socket(host: &str, port: u16) -> Result<TcpSocket, I2pError> {
     });
 }
 
+/// Create new, uninitialized socket
+///
+/// Create a socket but do not handshake with the router to establish the initial connection
+///
+/// # Arguments
+///
+/// `stype` - Socket type (virtual stream, anonymous or repliable datagram)
+/// `host` - SAM host server address
+/// `port`- SAM host server port
+///
+pub fn new_uninit(stype: SocketType, host: &str, port: u16) -> Result<I2pSocket, I2pError> {
+    match stype {
+        SocketType::Tcp => {
+            match tcp_socket(host, port) {
+                Ok(v) => return Ok(I2pSocket {
+                    stype: SocketType::Tcp,
+                    tcp:   Some(v),
+                    _udp:  None,
+                }),
+                Err(e) => return Err(e),
+            };
+        },
+        SocketType::Udp => {
+            match udp_socket(host, port) {
+                Ok(v) => return Ok(I2pSocket {
+                    stype: SocketType::Udp,
+                    tcp:   None,
+                    _udp:  Some(v),
+                }),
+                Err(e) => return Err(e),
+            };
+        }
+    };
+}
+
 impl I2pSocket {
 
     pub fn new(stype: SocketType, host: &str, port: u16) -> Result<I2pSocket, I2pError> {
-        let mut socket;
-
-        match stype {
-            SocketType::Tcp => {
-                socket = match tcp_socket(host, port) {
-                    Ok(v) => I2pSocket {
-                        stype: SocketType::Tcp,
-                        tcp:   Some(v),
-                        _udp:  None,
-                    },
-                    Err(e) => return Err(e),
-                };
-            },
-            SocketType::Udp => {
-                socket = match udp_socket(host, port) {
-                    Ok(v) => I2pSocket {
-                        stype: SocketType::Udp,
-                        tcp:   None,
-                        _udp:  Some(v),
-                    },
-                    Err(e) => return Err(e),
-                };
-            }
+        let mut socket = match new_uninit(stype, host, port) {
+            Ok(v)  => v,
+            Err(e) => return Err(e),
         };
 
         match hello::handshake(&mut socket) {
