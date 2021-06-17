@@ -81,3 +81,117 @@ pub fn check_result(response: &Message) -> Result<(), (I2pError, String)> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::{Message, Command, Subcommand, parse};
+
+    #[test]
+    fn test_get_message() {
+        assert_eq!(
+            get_message(&parse(
+                "HELLO REPLY MESSAGE=\"HELLO WORLD\"",
+                Command::Hello,
+                Some(Subcommand::Reply),
+            ).unwrap()),
+            "HELLO WORLD",
+        );
+
+        assert_eq!(
+            get_message(&parse(
+                "HELLO REPLY VERSION=3.1",
+                Command::Hello,
+                Some(Subcommand::Reply),
+            ).unwrap()),
+            "No message from router",
+        );
+    }
+
+    #[test]
+    fn test_check_result() {
+        assert_eq!(
+            check_result(&parse(
+                "HELLO REPLY",
+                Command::Hello,
+                Some(Subcommand::Reply),
+            ).unwrap()),
+            Err((I2pError::DoesntExist, "No message from router".to_string())),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO RESULT=OK",
+                Command::Hello,
+                None,
+            ).unwrap()),
+            Ok(()),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO RESULT=DUPLICATED_ID",
+                Command::Hello,
+                None,
+            ).unwrap()),
+            Err((I2pError::Duplicate, "No message from router".to_string())),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO RESULT=DUPLICATED_DEST MESSAGE=\"DESTINATION ALREDY EXIST\"",
+                Command::Hello,
+                None,
+            ).unwrap()),
+            Err((
+                I2pError::Duplicate,
+                "DESTINATION ALREDY EXIST".to_string(),
+            )),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO RESULT=INVALID_KEY",
+                Command::Hello,
+                None,
+            ).unwrap()),
+            Err((I2pError::InvalidValue, "No message from router".to_string())),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO RESULT=INVALID_ID MESSAGE=\"INVALID NICKNAME\"",
+                Command::Hello,
+                None,
+            ).unwrap()),
+            Err((
+                I2pError::InvalidValue,
+                "INVALID NICKNAME".to_string(),
+            )),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO RESULT=I2P_ERROR MESSAGE=\"ROUTER ERROR\"",
+                Command::Hello,
+                None,
+            ).unwrap()),
+            Err((
+                I2pError::RouterError,
+                "ROUTER ERROR".to_string(),
+            )),
+        );
+
+        assert_eq!(
+            check_result(&parse(
+                "HELLO REPLY RESULT=INVALID_RESULT MESSAGE=\"NEW STATUS CODE\"",
+                Command::Hello,
+                Some(Subcommand::Reply),
+            ).unwrap()),
+            Err((
+                I2pError::Unknown,
+                "NEW STATUS CODE".to_string(),
+            )),
+        );
+    }
+}
