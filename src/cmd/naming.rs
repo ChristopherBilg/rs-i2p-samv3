@@ -74,29 +74,41 @@ mod tests {
 
     #[test]
     fn test_lookup() {
-        let mut socket = match I2pSocket::new(SocketType::Tcp, "localhost", 7656) {
-            Ok(v)  => v,
-            Err(e) => {
-                eprintln!("test_handshake: {:#?}", e);
-                assert!(false);
-                return;
-            }
-        };
+        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
 
-        // enable connection to router
-        handshake(&mut socket);
-
+        // zzz.i2p exists
         assert_eq!(
-           lookup(&mut socket, "zzz.i2p"),
-           Ok((
-               "ME".to_string(),
-               "GKapJ8koUcBj~jmQzHsTYxDg2tpfWj0xjQTzd8BhfC9c3OS5fwPBNajgF-eOD6eCjFTqTlorlh7Hnd8kXj1qblUGXT-tDoR9~YV8dmXl51cJn9MVTRrEqRWSJVXbUUz9t5Po6Xa247Vr0sJn27R4KoKP8QVj1GuH6dB3b6wTPbOamC3dkO18vkQkfZWUdRMDXk0d8AdjB0E0864nOT~J9Fpnd2pQE5uoFT6P0DqtQR2jsFvf9ME61aqLvKPPWpkgdn4z6Zkm-NJOcDz2Nv8Si7hli94E9SghMYRsdjU-knObKvxiagn84FIwcOpepxuG~kFXdD5NfsH0v6Uri3usE3uSzpWS0EHmrlfoLr5uGGd9ZHwwCIcgfOATaPRMUEQxiK9q48PS0V3EXXO4-YLT0vIfk4xO~XqZpn8~PW1kFe2mQMHd7oO89yCk-3yizRG3UyFtI7-mO~eCI6-m1spYoigStgoupnC3G85gJkqEjMm49gUjbhfWKWI-6NwTj0ZnAAAA".to_string()
-           ))
+           lookup(&mut socket, "zzz.i2p").unwrap().0,
+            "zzz.i2p".to_string(),
         );
 
         assert_eq!(
             lookup(&mut socket, "abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrst.b32.i2p"),
-            Err(I2pError::InvalidValue)
+            Err(I2pError::DoesntExist)
+        );
+    }
+
+    // calls from the same socket to destination ME should result in the same public key
+    #[test]
+    fn test_lookup_same_socket() {
+        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+
+        assert_eq!(
+            lookup(&mut socket, "ME"),
+            lookup(&mut socket, "ME"),
+        );
+    }
+
+    // two separate connections, even from the same machine, should get different destinations
+    // TODO fix this
+    #[test]
+    fn test_lookup_two_sockets() {
+        let mut socket1 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket2 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+
+        assert_ne!(
+            lookup(&mut socket1, "ME"),
+            lookup(&mut socket2, "ME"),
         );
     }
 }
