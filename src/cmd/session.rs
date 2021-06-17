@@ -12,36 +12,23 @@ use crate::cmd::aux;
 /// `response` - Router's response in text format
 ///
 fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
-    match parse(response, Command::Session, Some(Subcommand::Status)) {
-        Ok(v)  => {
-            match v.get_value("RESULT") {
-                Some(res) => {
-                    match &res[..] {
-                        "OK" => {
-                            Ok(Vec::new())
-                        },
-                        "DUPLICATED_ID" | "DUPLICATED_DEST" => {
-                            Err(I2pError::Duplicate)
-                        },
-                        "INVALID_KEY" => {
-                            Err(I2pError::InvalidValue)
-                        },
-                        _ => {
-                            eprintln!("Unknown status from router: {}", res);
-                            Err(I2pError::Unknown)
-                        }
-                    }
-                },
-                None => {
-                    eprintln!("RESULT missing from router's response!");
-                    eprintln!("Full response: {}", response);
-                    Err(I2pError::Unknown)
-                }
-            }
-        }
+
+    let parsed = match parse(response, Command::Session, Some(Subcommand::Status)) {
+        Ok(v)  => v,
         Err(e) => {
             eprintln!("Failed to parse response: {:#?}", e);
             return Err(I2pError::InvalidValue);
+        }
+    };
+
+    match aux::check_result(&parsed) {
+        Ok(_) => {
+            Ok(Vec::new())
+        },
+        Err(e) => {
+            eprintln!("Response did not contain RESULT=OK: {:#?}", e.0);
+            eprintln!("Message: {}", e.1);
+            Err(e.0)
         }
     }
 }

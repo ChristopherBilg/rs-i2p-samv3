@@ -13,25 +13,12 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
         }
     };
 
-    match parsed.get_value("RESULT") {
-        Some(v) => {
-            match &v[..] {
-                "OK" => {
-                },
-                "KEY_NOT_FOUND" => {
-                    return Err(I2pError::DoesntExist);
-                },
-                "INVALID_KEY" | "INVALID" => {
-                    return Err(I2pError::InvalidValue);
-                }
-                _ => {
-                    todo!();
-                }
-            }
-        },
-        None => {
-            eprintln!("Router response did not contain RESULT!");
-            return Err(I2pError::InvalidValue);
+    match aux::check_result(&parsed) {
+        Ok(_)  => { },
+        Err(e) => {
+            eprintln!("Response did not contain RESULT=OK: {:#?}", e.0);
+            eprintln!("Message: {}", e.1);
+            return Err(e.0);
         }
     }
 

@@ -21,27 +21,14 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
         }
     };
 
-    match parsed.get_value("RESULT") {
-        Some(v) => {
-            match &v[..] {
-                "OK" => {
-                    Ok(Vec::new())
-                },
-                "I2P_ERROR" => {
-                    return Err(I2pError::RouterError);
-                },
-                "NOVERSION" => {
-                    return Err(I2pError::InvalidValue);
-                },
-                _ => {
-                    eprintln!("Unknown response from router: {}", v);
-                    return Err(I2pError::Unknown);
-                }
-            }
+    match aux::check_result(&parsed) {
+        Ok(_) => {
+            Ok(Vec::new())
         },
-        None => {
-            eprintln!("Router respones did not contain RESULT!");
-            return Err(I2pError::InvalidValue);
+        Err(e) => {
+            eprintln!("Response did not contain RESULT=OK: {:#?}", e.0);
+            eprintln!("Message: {}", e.1);
+            Err(e.0)
         }
     }
 }
