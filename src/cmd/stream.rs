@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::cmd::aux;
 
@@ -29,11 +29,11 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller
+/// `socket` - I2pStreamSocket object created by the caller
 /// `nick` - Nickname of the client, generated during I2pSession creation
 /// `host` - Destination address of the remote peer (normal or a b32 address, or a public key)
 ///
-pub fn connect(socket: &mut I2pSocket, nick: &str, host: &str) -> Result<(), I2pError> {
+pub fn connect(socket: &mut I2pStreamSocket, nick: &str, host: &str) -> Result<(), I2pError> {
     let msg = format!("STREAM CONNECT ID={} DESTINATION={} SILENT=false\n", nick, host);
 
     match aux::exchange_msg(socket, &msg, &parser) {
@@ -46,10 +46,10 @@ pub fn connect(socket: &mut I2pSocket, nick: &str, host: &str) -> Result<(), I2p
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller
+/// `socket` - I2pStreamSocket object created by the caller
 /// `nick` - Nickname of the client, generated during I2pSession creation
 ///
-pub fn accept(socket: &mut I2pSocket, nick: &str) -> Result<(), I2pError> {
+pub fn accept(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> {
     let msg = format!("STREAM ACCEPT ID={} SILENT=false\n", nick);
 
     match aux::exchange_msg(socket, &msg, &parser) {
@@ -62,7 +62,7 @@ pub fn accept(socket: &mut I2pSocket, nick: &str) -> Result<(), I2pError> {
 mod tests {
     use super::*;
     use crate::session::{I2pSession, SessionType};
-    use crate::socket::{I2pSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, SocketType};
     use crate::proto::stream::I2pStream;
     use std::thread;
     use std::time;
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn test_connection() {
         let session = I2pSession::new(SessionType::VirtualStream).unwrap();
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
 
         // valid nickname and host
         assert_eq!(
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn test_accept_invalid_nick() {
         let session    = I2pSession::new(SessionType::VirtualStream).unwrap();
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
 
         // invalid nickname
         assert_eq!(
@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn test_accept_server() {
         let session    = I2pSession::new(SessionType::VirtualStream).unwrap();
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
         let local_dest = session.nick.clone();
 
         // spawn a thread for the client and notify the router

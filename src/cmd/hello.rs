@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::cmd::aux;
 
@@ -33,7 +33,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
-fn handshake_internal(socket: &mut I2pSocket, msg: &str) -> Result<(), I2pError> {
+fn handshake_internal(socket: &mut I2pStreamSocket, msg: &str) -> Result<(), I2pError> {
     match aux::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
@@ -43,9 +43,9 @@ fn handshake_internal(socket: &mut I2pSocket, msg: &str) -> Result<(), I2pError>
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller
+/// `socket` - I2pStreamSocket object created by the caller
 ///
-pub fn handshake(socket: &mut I2pSocket) -> Result<(), I2pError> {
+pub fn handshake(socket: &mut I2pStreamSocket) -> Result<(), I2pError> {
     handshake_internal(
         socket,
         &format!("HELLO VERSION MIN={} MAX={}\n", MIN_VERSION, MAX_VERSION)
@@ -55,7 +55,8 @@ pub fn handshake(socket: &mut I2pSocket) -> Result<(), I2pError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pSocket, SocketType, new_uninit};
+    /*
+    use crate::socket::{I2pStreamSocket, SocketType, new_uninit};
 
     #[test]
     fn test_handshake() {
@@ -121,4 +122,5 @@ mod tests {
             Err(I2pError::RouterError),
         );
     }
+    */
 }

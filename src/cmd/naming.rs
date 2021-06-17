@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::cmd::aux;
 
@@ -42,9 +42,9 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller
+/// `socket` - I2pStreamSocket object created by the caller
 ///
-pub fn lookup(socket: &mut I2pSocket, addr: &str) -> Result<(String, String), I2pError> {
+pub fn lookup(socket: &mut I2pStreamSocket, addr: &str) -> Result<(String, String), I2pError> {
     let msg = format!("NAMING LOOKUP NAME={}\n", addr);
 
     match aux::exchange_msg(socket, &msg, &parser) {
@@ -56,14 +56,14 @@ pub fn lookup(socket: &mut I2pSocket, addr: &str) -> Result<(String, String), I2
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, SocketType};
     use crate::cmd::hello::*;
     use crate::session::*;
     use crate::error::I2pError;
 
     #[test]
     fn test_lookup() {
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
 
         // zzz.i2p exists
         assert_eq!(

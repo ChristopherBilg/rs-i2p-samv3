@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::session::SessionType;
 use crate::cmd::aux;
@@ -33,7 +33,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
-pub fn create(socket: &mut I2pSocket, stype: &SessionType, nick: &str) -> Result<(), I2pError> {
+pub fn create(socket: &mut I2pStreamSocket, stype: &SessionType, nick: &str) -> Result<(), I2pError> {
 
     let msg = match stype {
         SessionType::VirtualStream => {
@@ -51,11 +51,11 @@ pub fn create(socket: &mut I2pSocket, stype: &SessionType, nick: &str) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, SocketType};
 
     #[test]
     fn test_create_session() {
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
 
         assert_eq!(
             create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_create_session_duplicate() {
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
 
         assert_eq!(
             create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
@@ -86,8 +86,8 @@ mod tests {
     #[test]
     #[ignore]
     fn test_create_session_two_sockets_same_nick() {
-        let mut socket1 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
-        let mut socket2 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket1 = I2pStreamSocket::new().unwrap();
+        let mut socket2 = I2pStreamSocket::new().unwrap();
 
         assert_eq!(
             create(&mut socket1, &SessionType::VirtualStream, "rs-i2p-samv3-test"),

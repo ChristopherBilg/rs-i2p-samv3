@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pStreamSocket;
 use crate::parser::Message;
 
 /// exchange_msg() sends the specified message to the router and reads a response
@@ -14,12 +14,12 @@ use crate::parser::Message;
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller.
+/// `socket` - I2pStreamSocket object created by the caller.
 /// `msg` - SAMv3 message that is sent to the router
 /// `parser` - parser function which validates the received response
 ///
 pub fn exchange_msg(
-    socket: &mut I2pSocket,
+    socket: &mut I2pStreamSocket,
     msg:    &str,
     parser: &dyn Fn(&str) -> Result<Vec<(String, String)>, I2pError>)
     -> Result<Vec<(String, String)>, I2pError> {

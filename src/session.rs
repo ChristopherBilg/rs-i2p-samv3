@@ -2,11 +2,8 @@ use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 
 use crate::error::I2pError;
-use crate::socket::{I2pSocket, SocketType};
+use crate::socket::{I2pStreamSocket, SocketType};
 use crate::cmd::*;
-
-const SAM_TCP_PORT: u16  = 7656;
-const _SAM_UDP_PORT: u16 = 7655;
 
 pub enum SessionType {
     VirtualStream,
@@ -15,7 +12,7 @@ pub enum SessionType {
 }
 
 pub struct I2pSession {
-    pub socket: I2pSocket,
+    pub socket: I2pStreamSocket,
     pub nick:   String,
     pub local:  String,
 }
@@ -34,7 +31,7 @@ impl I2pSession {
     ///
     pub fn new(stype: SessionType) -> Result<I2pSession, I2pError> {
 
-        let mut socket = match I2pSocket::new(SocketType::Tcp, "localhost", SAM_TCP_PORT) {
+        let mut socket = match I2pStreamSocket::new() {
             Ok(v)  => v,
             Err(e) => {
                 eprintln!("Failed to connect to the router: {:#?}", e);

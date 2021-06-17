@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::cmd::aux;
 
@@ -43,9 +43,9 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller
+/// `socket` - I2pStreamSocket object created by the caller
 ///
-pub fn generate(socket: &mut I2pSocket) -> Result<(String, String), I2pError> {
+pub fn generate(socket: &mut I2pStreamSocket) -> Result<(String, String), I2pError> {
     let msg = format!("DEST GENERATE SIGNATURE_TYPE=7\n");
 
     match aux::exchange_msg(socket, &msg, &parser) {
@@ -57,7 +57,7 @@ pub fn generate(socket: &mut I2pSocket) -> Result<(String, String), I2pError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, SocketType};
 
     #[test]
     fn test_gen_keys() {
