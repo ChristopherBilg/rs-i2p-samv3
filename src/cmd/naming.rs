@@ -58,6 +58,8 @@ mod tests {
     use super::*;
     use crate::socket::{I2pSocket, SocketType};
     use crate::cmd::hello::*;
+    use crate::session::*;
+    use crate::error::I2pError;
 
     #[test]
     fn test_lookup() {
@@ -78,24 +80,28 @@ mod tests {
     // calls from the same socket to destination ME should result in the same public key
     #[test]
     fn test_lookup_same_socket() {
-        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut session = I2pSession::new(SessionType::VirtualStream).unwrap();
 
         assert_eq!(
-            lookup(&mut socket, "ME"),
-            lookup(&mut socket, "ME"),
+            lookup(&mut session.socket, "ME").unwrap().0,
+            "ME",
+        );
+
+        assert_eq!(
+            lookup(&mut session.socket, "ME"),
+            lookup(&mut session.socket, "ME"),
         );
     }
 
     // two separate connections, even from the same machine, should get different destinations
-    // TODO fix this
     #[test]
     fn test_lookup_two_sockets() {
-        let mut socket1 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
-        let mut socket2 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut session1 = I2pSession::new(SessionType::VirtualStream).unwrap();
+        let mut session2 = I2pSession::new(SessionType::VirtualStream).unwrap();
 
         assert_ne!(
-            lookup(&mut socket1, "ME"),
-            lookup(&mut socket2, "ME"),
+            lookup(&mut session1.socket, "ME"),
+            lookup(&mut session2.socket, "ME"),
         );
     }
 }
