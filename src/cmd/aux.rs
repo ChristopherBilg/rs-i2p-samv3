@@ -1,5 +1,6 @@
 use crate::error::I2pError;
 use crate::socket::I2pSocket;
+use crate::parser::Message;
 
 /// exchange_msg() sends the specified message to the router and reads a response
 /// with a timeout.
@@ -24,9 +25,9 @@ pub fn exchange_msg(
     -> Result<Vec<(String, String)>, I2pError> {
 
     match socket.write(msg.as_bytes()) {
-        Ok(_)  => {},
+        Ok(_)  => { },
         Err(e) => {
-            eprintln!("Failed to send DEST command to the router: {:#?}", e);
+            eprintln!("Failed to send command command to the router: {:#?}", e);
             return Err(I2pError::TcpStreamError);
         }
     }
@@ -34,7 +35,7 @@ pub fn exchange_msg(
     let mut data = String::new();
 
     match socket.read_line(&mut data) {
-        Ok(_) => { },
+        Ok(_)  => { },
         Err(e) => {
             eprintln!("Failed to read response from router: {:#?}", e);
             return Err(e);
@@ -42,4 +43,41 @@ pub fn exchange_msg(
     }
 
     parser(&data)
+}
+
+fn get_message(response: &Message) -> String {
+    match response.get_value("MESSAGE") {
+        Some(v) => v.to_string(),
+        None    => "No message from router".to_string(),
+    }
+}
+
+pub fn check_result(response: &Message) -> Result<(), (I2pError, String)> {
+    match response.get_value("RESULT") {
+        Some(res) => {
+            match &res[..] {
+                "OK" => {
+                    Ok(())
+                },
+                "DUPLICATED_ID" | "DUPLICATED_DEST" => {
+                    Err((I2pError::Duplicate, get_message(&response)))
+                },
+                "INVALID_KEY" | "INVALID_ID" => {
+                    Err((I2pError::InvalidValue, get_message(&response)))
+                },
+                "I2P_ERROR" => {
+                    Err((I2pError::RouterError, get_message(&response)))
+                },
+                "KEY_NOT_FOUND" => {
+                    Err((I2pError::DoesntExist, get_message(&response)))
+                }
+                _ => {
+                    Err((I2pError::Unknown, get_message(&response)))
+                }
+            }
+        },
+        None => {
+            Err((I2pError::DoesntExist, get_message(&response)))
+        }
+    }
 }
