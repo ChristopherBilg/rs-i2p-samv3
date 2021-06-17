@@ -218,7 +218,6 @@ impl I2pSocket {
     }
 }
 
-// TODO add tests
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -237,6 +236,25 @@ mod tests {
     #[test]
     fn test_tcp_wrong_port() {
         match I2pSocket::new(SocketType::Tcp, "localhost", 7655) {
+            Ok(_)  => assert!(false),
+            Err(_) => assert!(true),
+        }
+    }
+
+    #[test]
+    fn test_tcp_uninit() {
+        match new_uninit(SocketType::Tcp, "localhost", 7656) {
+            Ok(_)  => assert!(true),
+            Err(e) => {
+                eprintln!("test_tcp: {:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_tcp_wrong_port_uninit() {
+        match new_uninit(SocketType::Tcp, "localhost", 7655) {
             Ok(_)  => assert!(false),
             Err(_) => assert!(true),
         }
