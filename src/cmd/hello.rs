@@ -46,18 +46,23 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
+fn handshake_internal(socket: &mut I2pSocket, msg: &str) -> Result<(), I2pError> {
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(_)  => Ok(()),
+        Err(e) => Err(e),
+    }
+}
+
 ///
 /// # Arguments
 ///
 /// `socket` - I2pSocket object created by the caller
 ///
 pub fn handshake(socket: &mut I2pSocket) -> Result<(), I2pError> {
-    let msg = format!("HELLO VERSION MIN={} MAX={}\n", MIN_VERSION, MAX_VERSION);
-
-    match aux::exchange_msg(socket, &msg, &parser) {
-        Ok(_)  => Ok(()),
-        Err(e) => Err(e),
-    }
+    handshake_internal(
+        socket,
+        &format!("HELLO VERSION MIN={} MAX={}\n", MIN_VERSION, MAX_VERSION)
+    )
 }
 
 #[cfg(test)]
