@@ -4,10 +4,6 @@ use crate::parser::{Command, Subcommand, parse};
 use crate::session::SessionType;
 use crate::cmd::aux;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct KeyPair {
-}
-
 /// Parse and validate router's SAMv3-compatible response
 ///
 /// If the message is valid, return the parsed Message object to caller
@@ -16,9 +12,33 @@ pub struct KeyPair {
 /// `response` - Router's response in text format
 ///
 fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
-
     match parse(response, Command::Session, Some(Subcommand::Status)) {
-        Ok(_)  => Ok(Vec::new()),
+        Ok(v)  => {
+            match v.get_value("RESULT") {
+                Some(res) => {
+                    match &res[..] {
+                        "OK" => {
+                            Ok(Vec::new())
+                        },
+                        "DUPLICATED_ID" | "DUPLICATED_DEST" => {
+                            Err(I2pError::Duplicate)
+                        },
+                        "INVALID_KEY" => {
+                            Err(I2pError::InvalidValue)
+                        },
+                        _ => {
+                            eprintln!("Unknown status from router: {}", res);
+                            Err(I2pError::Unknown)
+                        }
+                    }
+                },
+                None => {
+                    eprintln!("RESULT missing from router's response!");
+                    eprintln!("Full response: {}", response);
+                    Err(I2pError::Unknown)
+                }
+            }
+        }
         Err(e) => {
             eprintln!("Failed to parse response: {:#?}", e);
             return Err(I2pError::InvalidValue);
