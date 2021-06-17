@@ -67,8 +67,49 @@ mod tests {
     use crate::socket::{I2pSocket, SocketType};
 
     #[test]
-    fn test_gen_keys() {
-        assert!(true);
+    fn test_create_session() {
+        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+
+        assert_eq!(
+            create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            Ok(())
+        );
+    }
+
+    // try to create session and then another with the same nickname
+    //
+    // ignore for now as this takes several tens of seconds
+    #[test]
+    #[ignore]
+    fn test_create_session_duplicate() {
+        let mut socket = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+
+        assert_eq!(
+            create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            Ok(())
+        );
+
+        assert_eq!(
+            create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            Err(I2pError::Unknown),
+        );
+    }
+
+    // ignore for now as this takes several tens of seconds
+    #[test]
+    #[ignore]
+    fn test_create_session_two_sockets_same_nick() {
+        let mut socket1 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket2 = I2pSocket::new(SocketType::Tcp, "localhost", 7656).unwrap();
+
+        assert_eq!(
+            create(&mut socket1, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            Ok(())
+        );
+
+        assert_eq!(
+            create(&mut socket2, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            Err(I2pError::Duplicate),
+        );
     }
 }
-
