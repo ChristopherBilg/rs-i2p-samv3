@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pStreamSocket;
+use crate::socket::I2pSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::cmd::aux;
 
@@ -33,7 +33,9 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
-fn handshake_internal(socket: &mut I2pStreamSocket, msg: &str) -> Result<(), I2pError> {
+fn handshake_internal<T>(socket: &mut T, msg: &str) -> Result<(), I2pError>
+where T: I2pSocket
+{
     match aux::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
@@ -43,9 +45,11 @@ fn handshake_internal(socket: &mut I2pStreamSocket, msg: &str) -> Result<(), I2p
 ///
 /// # Arguments
 ///
-/// `socket` - I2pStreamSocket object created by the caller
+/// `socket` - I2pSocket object created by the caller
 ///
-pub fn handshake(socket: &mut I2pStreamSocket) -> Result<(), I2pError> {
+pub fn handshake<T>(socket: &mut T) -> Result<(), I2pError>
+    where T: I2pSocket
+{
     handshake_internal(
         socket,
         &format!("HELLO VERSION MIN={} MAX={}\n", MIN_VERSION, MAX_VERSION)
@@ -55,23 +59,22 @@ pub fn handshake(socket: &mut I2pStreamSocket) -> Result<(), I2pError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    /*
-    use crate::socket::{I2pStreamSocket, SocketType, new_uninit};
+    use crate::socket::{I2pStreamSocket, I2pSocket};
 
     #[test]
     fn test_handshake() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
 
         assert_eq!(
             handshake_internal(&mut socket, "HELLO VERSION MIN=3.1 MAX=3.1\n"),
             Ok(())
         );
-
     }
 
     #[test]
     fn test_handshake_no_version() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
+
         assert_eq!(
             handshake_internal(&mut socket, "HELLO VERSION\n"),
             Ok(())
@@ -80,7 +83,8 @@ mod tests {
 
     #[test]
     fn test_handshake_min() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
+
         assert_eq!(
             handshake_internal(&mut socket, "HELLO VERSION MIN=3.1\n"),
             Ok(())
@@ -89,7 +93,8 @@ mod tests {
 
     #[test]
     fn test_handshake_max() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
+
         assert_eq!(
             handshake_internal(&mut socket, "HELLO VERSION MAX=3.1\n"),
             Ok(())
@@ -98,7 +103,8 @@ mod tests {
 
     #[test]
     fn test_handshake_invalid_subcommand() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
+
         assert_eq!(
             handshake_internal(&mut socket, "HELLO TEST\n"),
             Err(I2pError::RouterError),
@@ -107,7 +113,8 @@ mod tests {
 
     #[test]
     fn test_handshake_version_too_high() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
+
         assert_eq!(
             handshake_internal(&mut socket, "HELLO MIN=3.4\n"),
             Err(I2pError::RouterError),
@@ -116,11 +123,11 @@ mod tests {
 
     #[test]
     fn test_handshake_versions_switched() {
-        let mut socket = new_uninit(SocketType::Tcp, "localhost", 7656).unwrap();
+        let mut socket = I2pStreamSocket::new().unwrap();
+
         assert_eq!(
             handshake_internal(&mut socket, "HELLO MIN=3.3 MAX=3.1\n"),
             Err(I2pError::RouterError),
         );
     }
-    */
 }

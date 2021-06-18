@@ -56,14 +56,14 @@ pub fn lookup(socket: &mut I2pStreamSocket, addr: &str) -> Result<(String, Strin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, I2pSocket};
     use crate::cmd::hello::*;
     use crate::session::*;
     use crate::error::I2pError;
 
     #[test]
     fn test_lookup() {
-        let mut socket = I2pStreamSocket::new().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
 
         // zzz.i2p exists
         assert_eq!(

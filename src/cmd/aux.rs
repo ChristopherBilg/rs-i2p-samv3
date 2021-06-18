@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pStreamSocket;
+use crate::socket::I2pSocket;
 use crate::parser::Message;
 
 /// exchange_msg() sends the specified message to the router and reads a response
@@ -18,13 +18,14 @@ use crate::parser::Message;
 /// `msg` - SAMv3 message that is sent to the router
 /// `parser` - parser function which validates the received response
 ///
-pub fn exchange_msg(
-    socket: &mut I2pStreamSocket,
+pub fn exchange_msg<T>(
+    socket: &mut T,
     msg:    &str,
     parser: &dyn Fn(&str) -> Result<Vec<(String, String)>, I2pError>)
-    -> Result<Vec<(String, String)>, I2pError> {
-
-    match socket.write(msg.as_bytes()) {
+    -> Result<Vec<(String, String)>, I2pError>
+    where T: I2pSocket
+{
+    match socket.write_cmd(&msg.to_string()) {
         Ok(_)  => { },
         Err(e) => {
             eprintln!("Failed to send command command to the router: {:#?}", e);
@@ -33,8 +34,7 @@ pub fn exchange_msg(
     }
 
     let mut data = String::new();
-
-    match socket.read_line(&mut data) {
+    match socket.read_cmd(&mut data) {
         Ok(_)  => { },
         Err(e) => {
             eprintln!("Failed to read response from router: {:#?}", e);

@@ -1,27 +1,38 @@
-use std::net::{TcpStream};
+use std::net::{TcpStream, UdpSocket};
 use std::io::{BufReader, BufWriter, Write, BufRead, Read};
 use std::time::Duration;
 
 use crate::error::I2pError;
 use crate::cmd::hello;
 
-const SAM_TCP_PORT: u16  = 7656;
+const SAM_TCP_PORT: u16 = 7656;
 const _SAM_UDP_PORT: u16 = 7655;
 
-pub enum SocketType {
-    Tcp,
-    Udp,
-}
-
-struct UdpSocket {
+pub struct I2pDatagramSocket {
+    _socket: UdpSocket,
 }
 
 pub struct I2pStreamSocket {
-    reader: BufReader<TcpStream>,
     writer: BufWriter<TcpStream>,
+    reader: BufReader<TcpStream>,
 }
 
-fn udp_socket(_host: &str, _port: u16) -> Result<UdpSocket, I2pError> {
+pub trait I2pSocket: Sized {
+    fn new() -> Result<Self, I2pError>;
+    fn connected() -> Result<Self, I2pError>;
+    fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError>;
+    fn write_cmd(&mut self, buf: &String) -> Result<(), I2pError>;
+    fn write(&mut self, buf: &[u8]) -> Result<(), I2pError>;
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, I2pError>;
+}
+
+pub trait Streamable {
+    fn read_line(&mut self, _buf: &mut String) -> Result<usize, I2pError>;
+    fn read_to_string(&mut self, _buf: &mut String) -> Result<usize, I2pError>;
+    fn read_exact(&mut self, _buf: &mut [u8]) -> Result<(), I2pError>;
+}
+
+fn _udp_socket(_host: &str, _port: u16) -> Result<I2pDatagramSocket, I2pError> {
     todo!();
 }
 
@@ -49,9 +60,43 @@ fn tcp_socket(host: &str, port: u16) -> Result<I2pStreamSocket, I2pError> {
     });
 }
 
-impl I2pStreamSocket {
+impl I2pSocket for I2pDatagramSocket{
 
-    pub fn new() -> Result<I2pStreamSocket, I2pError> {
+    fn new() -> Result<Self, I2pError> {
+        todo!();
+    }
+
+    fn connected() -> Result<Self, I2pError> {
+        todo!();
+    }
+
+    fn read_cmd(&mut self, _buf: &mut String) -> Result<usize, I2pError> {
+        todo!();
+    }
+
+    fn write_cmd(&mut self, _buf: &String) -> Result<(), I2pError> {
+        todo!();
+    }
+
+    fn write(&mut self, _buf: &[u8]) -> Result<(), I2pError> {
+        todo!();
+    }
+
+    fn read(&mut self, _buf: &mut [u8]) -> Result<usize, I2pError> {
+        todo!();
+    }
+}
+
+impl I2pSocket for I2pStreamSocket {
+
+    fn new() -> Result<I2pStreamSocket, I2pError> {
+        match tcp_socket("localhost", SAM_TCP_PORT) {
+            Ok(v)  => Ok(v),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn connected() -> Result<I2pStreamSocket, I2pError> {
         let mut socket = match tcp_socket("localhost", SAM_TCP_PORT) {
             Ok(v)  => v,
             Err(e) => return Err(e),
@@ -63,7 +108,54 @@ impl I2pStreamSocket {
         }
     }
 
-    pub fn write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
+    /// See documentation for BufReader::read_line()
+    fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+        match self.reader.read_line(buf) {
+            Ok(nread)  => {
+                if nread == 0 {
+                    eprintln!("Received 0 bytes from the router");
+                    return Err(I2pError::TcpStreamError);
+                }
+                return Ok(nread);
+            }
+            Err(e) => {
+                eprintln!("Failed to receive TCP data: {}", e);
+                return Err(I2pError::TcpStreamError);
+            }
+        }
+    }
+
+    /// See documentation for Write::write()
+    ///
+    /// # Notes
+    /// - `buf` must not be empty
+    /// - `buf` must end in \n
+    ///
+    fn write_cmd(&mut self, buf: &String) -> Result<(), I2pError> {
+        if buf.len() == 0 {
+            return Err(I2pError::InvalidValue);
+        }
+
+        // TODO verify that last byte of String is \n
+
+        match self.writer.write(buf.as_bytes()) {
+            Ok(_)  => {
+                self.writer.flush().unwrap();
+                return Ok(());
+            },
+            Err(e) => {
+                eprintln!("Failed to send TCP data: {}", e);
+                return Err(I2pError::TcpStreamError);
+            }
+        }
+    }
+
+    /// See documentation for Write::write()
+    ///
+    /// # Notes
+    /// - `buf` must not be empty
+    ///
+    fn write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
         if buf.len() == 0 {
             return Err(I2pError::InvalidValue);
         }
@@ -80,8 +172,8 @@ impl I2pStreamSocket {
         }
     }
 
-    /// See documentation for BufReader::read()
-    pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, I2pError> {
+    /// See documentation for Read::read()
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, I2pError> {
         match self.reader.read(buf) {
             Ok(nread)  => {
                 if nread == 0 {
@@ -96,9 +188,12 @@ impl I2pStreamSocket {
             }
         }
     }
+}
+
+impl Streamable for I2pStreamSocket {
 
     /// See documentation for BufReader::read_line()
-    pub fn read_line(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+    fn read_line(&mut self, buf: &mut String) -> Result<usize, I2pError> {
         match self.reader.read_line(buf) {
             Ok(nread)  => {
                 if nread == 0 {
@@ -115,7 +210,7 @@ impl I2pStreamSocket {
     }
 
     /// See documentation for Read::read_to_string()
-    pub fn read_to_string(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+    fn read_to_string(&mut self, buf: &mut String) -> Result<usize, I2pError> {
         match self.reader.read_to_string(buf) {
             Ok(nread)  => {
                 if nread == 0 {
@@ -132,7 +227,7 @@ impl I2pStreamSocket {
     }
 
     /// See documentation for Read::read_exact()
-    pub fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), I2pError> {
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), I2pError> {
         match self.reader.read_exact(buf) {
             Ok(_) => {
                 return Ok(());
@@ -150,8 +245,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_tcp() {
-        match I2pStreamSocket::new() {
+    fn test_tcp_new() {
+        match I2pStreamSocket::connected() {
             Ok(_)  => assert!(true),
             Err(e) => {
                 eprintln!("test_tcp: {:#?}", e);
@@ -161,38 +256,27 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    fn test_tcp_connected() {
+        match I2pStreamSocket::connected() {
+            Ok(_)  => assert!(true),
+            Err(e) => {
+                eprintln!("test_tcp: {:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
     fn test_tcp_wrong_port() {
-        match I2pStreamSocket::new() {
+        match tcp_socket("localhost", 7655) {
             Ok(_)  => assert!(false),
             Err(_) => assert!(true),
         }
     }
-
-    /*
-    #[test]
-    fn test_tcp_uninit() {
-        match new_uninit() {
-            Ok(_)  => assert!(true),
-            Err(e) => {
-                eprintln!("test_tcp: {:#?}", e);
-                assert!(false);
-            }
-        }
-    }
-
-    #[test]
-    fn test_tcp_wrong_port_uninit() {
-        match new_uninit() {
-            Ok(_)  => assert!(false),
-            Err(_) => assert!(true),
-        }
-    }
-    */
 
     #[test]
     fn test_tcp_send() {
-        match I2pStreamSocket::new() {
+        match I2pStreamSocket::connected() {
             Ok(mut socket)  => {
                 match socket.write("PING".as_bytes()) {
                     Ok(_)  => assert!(true),
@@ -210,7 +294,7 @@ mod tests {
 
     #[test]
     fn test_tcp_send_empty() {
-        match I2pStreamSocket::new() {
+        match I2pStreamSocket::connected() {
             Ok(mut socket)  => {
                 let vec: Vec<u8> = Vec::new();
 

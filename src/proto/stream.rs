@@ -1,6 +1,6 @@
 use crate::session::*;
 use crate::error::I2pError;
-use crate::socket::{I2pStreamSocket, SocketType};
+use crate::socket::{I2pSocket, I2pStreamSocket, Streamable};
 use crate::cmd::*;
 
 pub struct I2pStream {
@@ -17,7 +17,7 @@ impl I2pStream {
         };
 
         // VirtualStream session was created successfully, now create actual client socket
-        let socket = match I2pStreamSocket::new() {
+        let socket = match I2pStreamSocket::connected() {
             Ok(v)  => v,
             Err(e) => {
                 eprintln!("Failed to connect to the router: {:#?}", e);

@@ -62,7 +62,7 @@ pub fn accept(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> 
 mod tests {
     use super::*;
     use crate::session::{I2pSession, SessionType};
-    use crate::socket::{I2pStreamSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, I2pSocket};
     use crate::proto::stream::I2pStream;
     use std::thread;
     use std::time;
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn test_connection() {
         let session = I2pSession::new(SessionType::VirtualStream).unwrap();
-        let mut socket = I2pStreamSocket::new().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
 
         // valid nickname and host
         assert_eq!(
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn test_accept_invalid_nick() {
         let session    = I2pSession::new(SessionType::VirtualStream).unwrap();
-        let mut socket = I2pStreamSocket::new().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
 
         // invalid nickname
         assert_eq!(
@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn test_accept_server() {
         let session    = I2pSession::new(SessionType::VirtualStream).unwrap();
-        let mut socket = I2pStreamSocket::new().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
         let local_dest = session.nick.clone();
 
         // spawn a thread for the client and notify the router

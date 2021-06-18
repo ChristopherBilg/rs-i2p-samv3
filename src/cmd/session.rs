@@ -51,11 +51,11 @@ pub fn create(socket: &mut I2pStreamSocket, stype: &SessionType, nick: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, SocketType};
+    use crate::socket::{I2pStreamSocket, I2pSocket};
 
     #[test]
     fn test_create_session() {
-        let mut socket = I2pStreamSocket::new().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
             create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_create_session_duplicate() {
-        let mut socket = I2pStreamSocket::new().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
             create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
@@ -86,8 +86,8 @@ mod tests {
     #[test]
     #[ignore]
     fn test_create_session_two_sockets_same_nick() {
-        let mut socket1 = I2pStreamSocket::new().unwrap();
-        let mut socket2 = I2pStreamSocket::new().unwrap();
+        let mut socket1 = I2pStreamSocket::connected().unwrap();
+        let mut socket2 = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
             create(&mut socket1, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
