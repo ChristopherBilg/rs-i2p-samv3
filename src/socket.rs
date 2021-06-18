@@ -20,6 +20,7 @@ pub struct I2pStreamSocket {
 
 pub trait I2pSocket: Sized {
     fn new() -> Result<Self, I2pError>;
+    fn new_sock(port: u16) -> Result<Self, I2pError>;
     fn connected() -> Result<Self, I2pError>;
     fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError>;
     fn write_cmd(&mut self, buf: &String) -> Result<(), I2pError>;
@@ -43,7 +44,7 @@ fn udp_socket(host: &str, port: u16) -> Result<I2pDatagramSocket, I2pError> {
         }
     };
 
-    match socket.set_read_timeout(Some(Duration::from_millis(2 * 1000))) {
+    match socket.set_read_timeout(Some(Duration::from_millis(60 * 1000))) {
         Ok(_)  => {},
         Err(e) => {
             eprintln!("Failed to set timeout for read operation: {}", e);
@@ -84,6 +85,13 @@ impl I2pSocket for I2pDatagramSocket{
 
     fn new() -> Result<Self, I2pError> {
         match udp_socket("localhost", RI2P_UDP_PORT) {
+            Ok(v)  => Ok(v),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn new_sock(port: u16) -> Result<Self, I2pError> {
+        match udp_socket("localhost", port) {
             Ok(v)  => Ok(v),
             Err(e) => Err(e),
         }
@@ -165,6 +173,10 @@ impl I2pSocket for I2pStreamSocket {
             Ok(v)  => Ok(v),
             Err(e) => Err(e),
         }
+    }
+
+    fn new_sock(port: u16) -> Result<Self, I2pError> {
+        todo!();
     }
 
     fn connected() -> Result<I2pStreamSocket, I2pError> {

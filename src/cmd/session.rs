@@ -33,14 +33,34 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
-pub fn create(socket: &mut I2pStreamSocket, stype: &SessionType, nick: &str) -> Result<(), I2pError> {
-
+pub fn create_dgram(
+    socket: &mut I2pStreamSocket,
+    stype:  &SessionType,
+    nick:   &str,
+    port:   u16)
+    -> Result<(), I2pError>
+{
     let msg = match stype {
-        SessionType::VirtualStream => {
-            format!("SESSION CREATE STYLE=STREAM ID={} DESTINATION=TRANSIENT\n", nick)
+        SessionType::RepliableDatagram => {
+            format!("SESSION CREATE STYLE=DATAGRAM ID={} PORT={} DESTINATION=TRANSIENT\n",
+                    nick, port)
+        },
+        SessionType::AnonymousDatagram => {
+            format!("SESSION CREATE STYLE=RAW ID={} PORT={} DESTINATION=TRANSIENT\n",
+                    nick, port)
         },
         _ => todo!(),
     };
+
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(_)  => Ok(()),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn create(socket: &mut I2pStreamSocket, stype: &SessionType, nick: &str) -> Result<(), I2pError> {
+
+    let msg = format!("SESSION CREATE STYLE=STREAM ID={} DESTINATION=TRANSIENT\n", nick);
 
     match aux::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
