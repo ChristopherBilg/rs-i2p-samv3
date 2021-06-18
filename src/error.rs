@@ -9,4 +9,6 @@ pub enum I2pError {
     ParseError,
     DoesntExist,
     Duplicate,
+    UdpReadError,
+    UdpWriteError,
 }

@@ -5,11 +5,12 @@ use std::time::Duration;
 use crate::error::I2pError;
 use crate::cmd::hello;
 
-const SAM_TCP_PORT: u16 = 7656;
-const _SAM_UDP_PORT: u16 = 7655;
+const SAM_TCP_PORT: u16  = 7656;
+const SAM_UDP_PORT: u16  = 7655;
+const RI2P_UDP_PORT: u16 = 17655;
 
 pub struct I2pDatagramSocket {
-    _socket: UdpSocket,
+    socket: UdpSocket,
 }
 
 pub struct I2pStreamSocket {
@@ -32,8 +33,27 @@ pub trait Streamable {
     fn read_exact(&mut self, _buf: &mut [u8]) -> Result<(), I2pError>;
 }
 
-fn _udp_socket(_host: &str, _port: u16) -> Result<I2pDatagramSocket, I2pError> {
-    todo!();
+fn udp_socket(host: &str, port: u16) -> Result<I2pDatagramSocket, I2pError> {
+
+    let socket = match UdpSocket::bind(format!("{}:{}", host, port)) {
+        Ok(v)  => v,
+        Err(e) => {
+            eprintln!("Failed to connect to the router: {}", e);
+            return Err(I2pError::TcpConnectionError);
+        }
+    };
+
+    match socket.set_read_timeout(Some(Duration::from_millis(2 * 1000))) {
+        Ok(_)  => {},
+        Err(e) => {
+            eprintln!("Failed to set timeout for read operation: {}", e);
+            return Err(I2pError::Unknown);
+        }
+    }
+
+    return Ok(I2pDatagramSocket {
+        socket: socket,
+    });
 }
 
 fn tcp_socket(host: &str, port: u16) -> Result<I2pStreamSocket, I2pError> {
@@ -63,27 +83,78 @@ fn tcp_socket(host: &str, port: u16) -> Result<I2pStreamSocket, I2pError> {
 impl I2pSocket for I2pDatagramSocket{
 
     fn new() -> Result<Self, I2pError> {
-        todo!();
+        match udp_socket("localhost", RI2P_UDP_PORT) {
+            Ok(v)  => Ok(v),
+            Err(e) => Err(e),
+        }
     }
 
     fn connected() -> Result<Self, I2pError> {
-        todo!();
+        let mut socket = match udp_socket("localhost", RI2P_UDP_PORT) {
+            Ok(v)  => v,
+            Err(e) => return Err(e),
+        };
+
+        match hello::handshake(&mut socket) {
+            Ok(_)  => { Ok(socket) },
+            Err(e) => return Err(e),
+        }
     }
 
-    fn read_cmd(&mut self, _buf: &mut String) -> Result<usize, I2pError> {
-        todo!();
+    fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+        let bytes = unsafe { buf.as_bytes_mut() };
+
+        match self.socket.recv(bytes) {
+            Ok(nread) => {
+                if nread == 0 {
+                    eprintln!("Received 0 bytes from the router");
+                    return Err(I2pError::UdpReadError);
+                }
+                return Ok(nread);
+            }
+            Err(e) => {
+                eprintln!("Failed to receive UDP data: {}", e);
+                return Err(I2pError::UdpReadError);
+            }
+        }
     }
 
-    fn write_cmd(&mut self, _buf: &String) -> Result<(), I2pError> {
-        todo!();
+    fn write_cmd(&mut self, buf: &String) -> Result<(), I2pError> {
+        // TODO verify message
+
+        match self.socket.send_to(buf.as_bytes(), format!("localhost:{}", SAM_UDP_PORT)) {
+            Ok(_)  => Ok(()),
+            Err(e) => {
+                eprintln!("Failed to send UDP data: {}", e);
+                return Err(I2pError::UdpWriteError);
+            }
+        }
     }
 
-    fn write(&mut self, _buf: &[u8]) -> Result<(), I2pError> {
-        todo!();
+    fn write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
+        match self.socket.send_to(buf, format!("localhost:{}", SAM_UDP_PORT)) {
+            Ok(_)  => Ok(()),
+            Err(e) => {
+                eprintln!("Failed to send UDP data: {}", e);
+                return Err(I2pError::UdpWriteError);
+            }
+        }
     }
 
-    fn read(&mut self, _buf: &mut [u8]) -> Result<usize, I2pError> {
-        todo!();
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, I2pError> {
+        match self.socket.recv(buf) {
+            Ok(nread) => {
+                if nread == 0 {
+                    eprintln!("Received 0 bytes from the router");
+                    return Err(I2pError::UdpReadError);
+                }
+                return Ok(nread);
+            }
+            Err(e) => {
+                eprintln!("Failed to receive UDP data: {}", e);
+                return Err(I2pError::UdpReadError);
+            }
+        }
     }
 }
 
