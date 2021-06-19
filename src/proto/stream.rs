@@ -48,6 +48,33 @@ impl I2pStream {
         Ok(())
     }
 
+    /// TODO
+    pub fn forwarded(port: u16) -> Result<I2pStream, I2pError> {
+        let mut session = match I2pSession::new(SessionType::VirtualStream) {
+            Ok(v)  => v,
+            Err(e) => return Err(e),
+        };
+
+        // VirtualStream session was created successfully, now create actual client socket
+        let mut socket = match I2pStreamSocket::connected() {
+            Ok(v)  => v,
+            Err(e) => {
+                eprintln!("Failed to connect to the router: {:#?}", e);
+                return Err(I2pError::TcpConnectionError);
+            }
+        };
+
+        match stream::forward(&mut socket, &session.nick, port) {
+            Ok(_)  => { },
+            Err(e) => return Err(e),
+        }
+
+        Ok(I2pStream {
+            _session: session,
+            socket:  socket,
+        })
+    }
+
     /// Accept a virtual stream connection from an I2P peer
     ///
     /// Function returns Ok(()) when a remote connection has been accepted
