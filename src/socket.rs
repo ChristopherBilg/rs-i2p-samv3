@@ -84,21 +84,21 @@ fn tcp_socket(host: &str, port: u16) -> Result<I2pStreamSocket, I2pError> {
 impl I2pSocket for I2pDatagramSocket{
 
     fn new() -> Result<Self, I2pError> {
-        match udp_socket("localhost", RI2P_UDP_PORT) {
+        match udp_socket("127.0.0.1", RI2P_UDP_PORT) {
             Ok(v)  => Ok(v),
             Err(e) => Err(e),
         }
     }
 
     fn new_sock(port: u16) -> Result<Self, I2pError> {
-        match udp_socket("localhost", port) {
+        match udp_socket("127.0.0.1", port) {
             Ok(v)  => Ok(v),
             Err(e) => Err(e),
         }
     }
 
     fn connected() -> Result<Self, I2pError> {
-        let mut socket = match udp_socket("localhost", RI2P_UDP_PORT) {
+        let mut socket = match udp_socket("127.0.0.1", RI2P_UDP_PORT) {
             Ok(v)  => v,
             Err(e) => return Err(e),
         };
@@ -130,7 +130,7 @@ impl I2pSocket for I2pDatagramSocket{
     fn write_cmd(&mut self, buf: &String) -> Result<(), I2pError> {
         // TODO verify message
 
-        match self.socket.send_to(buf.as_bytes(), format!("localhost:{}", SAM_UDP_PORT)) {
+        match self.socket.send_to(buf.as_bytes(), format!("127.0.0.1:{}", SAM_UDP_PORT)) {
             Ok(_)  => Ok(()),
             Err(e) => {
                 eprintln!("Failed to send UDP data: {}", e);
@@ -140,7 +140,7 @@ impl I2pSocket for I2pDatagramSocket{
     }
 
     fn write(&mut self, buf: &[u8]) -> Result<(), I2pError> {
-        match self.socket.send_to(buf, format!("localhost:{}", SAM_UDP_PORT)) {
+        match self.socket.send_to(buf, format!("127.0.0.1:{}", SAM_UDP_PORT)) {
             Ok(_)  => Ok(()),
             Err(e) => {
                 eprintln!("Failed to send UDP data: {}", e);
@@ -169,7 +169,7 @@ impl I2pSocket for I2pDatagramSocket{
 impl I2pSocket for I2pStreamSocket {
 
     fn new() -> Result<I2pStreamSocket, I2pError> {
-        match tcp_socket("localhost", SAM_TCP_PORT) {
+        match tcp_socket("127.0.0.1", SAM_TCP_PORT) {
             Ok(v)  => Ok(v),
             Err(e) => Err(e),
         }
@@ -180,7 +180,7 @@ impl I2pSocket for I2pStreamSocket {
     }
 
     fn connected() -> Result<I2pStreamSocket, I2pError> {
-        let mut socket = match tcp_socket("localhost", SAM_TCP_PORT) {
+        let mut socket = match tcp_socket("127.0.0.1", SAM_TCP_PORT) {
             Ok(v)  => v,
             Err(e) => return Err(e),
         };
@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     fn test_tcp_wrong_port() {
-        match tcp_socket("localhost", 7655) {
+        match tcp_socket("127.0.0.1", 7655) {
             Ok(_)  => assert!(false),
             Err(_) => assert!(true),
         }
