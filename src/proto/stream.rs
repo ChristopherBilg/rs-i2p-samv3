@@ -4,31 +4,40 @@ use crate::socket::{I2pSocket, I2pStreamSocket, Streamable};
 use crate::cmd::*;
 
 pub struct I2pStream {
-    _session: I2pSession,
-    socket:   I2pStreamSocket,
+    session: I2pSession,
+    socket:  I2pStreamSocket,
+}
+
+fn new() -> Result<I2pStream, I2pError> {
+    let session = match I2pSession::new(SessionType::VirtualStream) {
+        Ok(v)  => v,
+        Err(e) => return Err(e),
+    };
+
+    // VirtualStream session was created successfully, now create actual client socket
+    let socket = match I2pStreamSocket::connected() {
+        Ok(v)  => v,
+        Err(e) => {
+            eprintln!("Failed to connect to the router: {:#?}", e);
+            return Err(I2pError::TcpConnectionError);
+        }
+    };
+
+    Ok(I2pStream {
+        session: session,
+        socket:  socket,
+    })
 }
 
 impl I2pStream {
 
+    /// Create a new I2P virtual stream object
+    /// 
+    /// If the call succeeds, the returned stream object is not yet
+    /// connected to anything, and does not expect any incoming requests
+    /// so either connect() or accept must be called
     pub fn new() -> Result<I2pStream, I2pError> {
-        let session = match I2pSession::new(SessionType::VirtualStream) {
-            Ok(v)  => v,
-            Err(e) => return Err(e),
-        };
-
-        // VirtualStream session was created successfully, now create actual client socket
-        let socket = match I2pStreamSocket::connected() {
-            Ok(v)  => v,
-            Err(e) => {
-                eprintln!("Failed to connect to the router: {:#?}", e);
-                return Err(I2pError::TcpConnectionError);
-            }
-        };
-
-        Ok(I2pStream {
-            _session: session,
-            socket:  socket,
-        })
+        new()
     }
 
     /// Establish a virtual stream connection to an I2P host
@@ -40,7 +49,7 @@ impl I2pStream {
     /// `addr` - an I2P address (normal or b32), or a public key of remote peer
     ///
     pub fn connect(&mut self, addr: &str) -> Result<(), I2pError> {
-        match stream::connect(&mut self.socket, &self._session.nick, &addr) {
+        match stream::connect(&mut self.socket, &self.session.nick, &addr) {
             Ok(_)  => { },
             Err(e) => return Err(e),
         }
@@ -48,31 +57,32 @@ impl I2pStream {
         Ok(())
     }
 
-    /// TODO
+    /// Create a new session for a forwarded I2P virtual stream
+    ///
+    /// The stream object that is returned is not used for data
+    /// exchange but instead a new TCP listener must be created
+    /// that listens to the port provided.
+    ///
+    /// If this function succeeds, I2P router tries to connect
+    /// to that socket and when a remote peer wants to connect
+    /// to the socket, the router will route all data coming
+    /// from the remote peer to the socket
+    ///
+    /// # Arguments
+    /// `port` - port of the new TCP server that router should connect to
+    ///
     pub fn forwarded(port: u16) -> Result<I2pStream, I2pError> {
-        let mut session = match I2pSession::new(SessionType::VirtualStream) {
+        let mut stream = match new() {
             Ok(v)  => v,
             Err(e) => return Err(e),
         };
 
-        // VirtualStream session was created successfully, now create actual client socket
-        let mut socket = match I2pStreamSocket::connected() {
-            Ok(v)  => v,
-            Err(e) => {
-                eprintln!("Failed to connect to the router: {:#?}", e);
-                return Err(I2pError::TcpConnectionError);
-            }
-        };
-
-        match stream::forward(&mut socket, &session.nick, port) {
+        match stream::forward(&mut stream.socket, &stream.session.nick, port) {
             Ok(_)  => { },
             Err(e) => return Err(e),
         }
 
-        Ok(I2pStream {
-            _session: session,
-            socket:  socket,
-        })
+        Ok(stream)
     }
 
     /// Accept a virtual stream connection from an I2P peer
@@ -81,8 +91,7 @@ impl I2pStream {
     /// and an I2pError if there was an issue with the router.
     ///
     pub fn accept(&mut self) -> Result<(), I2pError> {
-        // router sent as RESULT=OK
-        match stream::accept(&mut self.socket, &self._session.nick) {
+        match stream::accept(&mut self.socket, &self.session.nick) {
             Ok(_)  => { },
             Err(e) => return Err(e),
         }
@@ -98,12 +107,14 @@ impl I2pStream {
         }
     }
 
+    /// Get the local destination of peer
     pub fn get_local_dest(&self) -> &str {
-        return &self._session.local;
+        return &self.session.local;
     }
 
+    /// Get the assigned random nickname of peer
     pub fn get_nick(&self) -> &str {
-        return &self._session.nick;
+        return &self.session.nick;
     }
 
     /// Write data to the I2P socket
@@ -132,5 +143,54 @@ impl I2pStream {
     /// Internally this function calls Read::read_exact()
     pub fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), I2pError> {
         self.socket.read_exact(buf)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::proto::stream::I2pStream;
+
+    #[test]
+    fn test_stream_new() {
+        match I2pStream::new() {
+            Ok(v) => {
+                assert!(true);
+            },
+            Err(e) => {
+                eprintln!("test_stream_new: {:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_stream_connect_valid() {
+        let mut stream = I2pStream::new().unwrap();
+
+        match stream.connect("idk.i2p") {
+            Ok(_) => {
+                assert!(true);
+            },
+            Err(e) => {
+                eprintln!("test_stream_connect_valid: {:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_stream_connect_invalid() {
+        let mut stream = I2pStream::new().unwrap();
+
+        match stream.connect("google.com") {
+            Ok(_) => {
+                assert!(false);
+            },
+            Err(e) => {
+                assert!(true);
+            }
+        }
+
     }
 }
