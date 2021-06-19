@@ -58,6 +58,16 @@ pub fn accept(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> 
     }
 }
 
+/// TODO
+pub fn forward(socket: &mut I2pStreamSocket, nick: &str, port: u16) -> Result<(), I2pError> {
+    let msg = format!("STREAM FORWARD ID={} PORT={} SILENT=false\n", nick, port);
+
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(_)  => Ok(()),
+        Err(e) => Err(e),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
