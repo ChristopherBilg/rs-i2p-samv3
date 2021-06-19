@@ -72,6 +72,14 @@ pub struct Message<'a> {
     values:  Option<KeyValuePair<'a>>,
 }
 
+#[derive(Debug, Eq, PartialEq)]
+// pub struct Datagram<'a> {
+pub struct DatagramHeader<'a> {
+    pub dest:     &'a str,
+    // values:   Option<KeyValuePair<'a>>,
+    // datagram: Vec<u8>,
+}
+
 impl Message<'_> {
     pub fn get_value(&self, key: &str) -> Option<&str> {
         match &self.values {
@@ -212,6 +220,36 @@ fn parse_internal(input: &str) -> Res<&str, Message> {
             },
         )
     })
+}
+
+fn parse_header_internal(input: &str) -> Res<&str, DatagramHeader> {
+    context(
+        "header",
+        tuple((
+            value,
+            // opt(whitespace),
+            // opt(values),
+            tag("\n")
+        )),
+    )(input)
+    .map(|(next_input, res)| {
+        (
+            next_input,
+            DatagramHeader {
+                dest:    res.0,
+            },
+        )
+    })
+}
+
+pub fn parse_header<'a>(data: &'a str) -> Result<(DatagramHeader, &'a str), I2pError> {
+    match parse_header_internal(data) {
+        Ok(v)  => return Ok((v.1, v.0)),
+        Err(e) => {
+            eprintln!("Failed to parse response: {:#?}", e);
+            return Err(I2pError::ParseError);
+        }
+    };
 }
 
 pub fn parse(data: &str, cmd: Command, sub_cmd: Option<Subcommand>) -> Result<Message, I2pError> {
@@ -406,4 +444,45 @@ mod tests {
                 })
             );
         }
+
+        #[test]
+        fn test_parse_header_valid1() {
+            assert_eq!(
+                parse_header(
+                    "ABCDEFG FROMPORT=7777 TOPORT=8888\nHello, world!",
+                ),
+                Ok((
+                    DatagramHeader {
+                        dest:   "ABCDEFG",
+                        // values: Some(vec![
+                        //     (
+                        //         "FROMPORT",
+                        //         "7777",
+                        //     ),
+                        //     (
+                        //         "TOPORT",
+                        //         "8888",
+                        //     ),
+                        // ]),
+                    },
+                    "Hello, world!"
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_header_valid2() {
+            assert_eq!(
+                parse_header(
+                    "ABCDEFG\nHello, world!",
+                ),
+                Ok((
+                    DatagramHeader {
+                        dest:   "ABCDEFG",
+                    },
+                    "Hello, world!"
+                ))
+            );
+        }
+
 }
