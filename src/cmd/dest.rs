@@ -57,7 +57,7 @@ pub fn generate(socket: &mut I2pStreamSocket) -> Result<(String, String), I2pErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pSocket};
+    use crate::socket::{I2pStreamSocket, I2pControlSocket};
 
     #[test]
     fn test_gen_keys() {

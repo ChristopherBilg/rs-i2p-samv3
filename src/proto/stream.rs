@@ -1,6 +1,6 @@
 use crate::session::*;
 use crate::error::I2pError;
-use crate::socket::{I2pSocket, I2pStreamSocket, Streamable};
+use crate::socket::{I2pControlSocket, I2pStreamSocket};
 use crate::cmd::*;
 
 pub struct I2pStream {

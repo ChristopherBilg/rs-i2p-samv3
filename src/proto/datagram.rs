@@ -1,18 +1,17 @@
 use crate::session::*;
 use crate::error::I2pError;
-use crate::socket::{I2pSocket, I2pStreamSocket, I2pDatagramSocket, Streamable};
-use crate::cmd::*;
+use crate::socket::{I2pControlSocket, I2pDatagramSocket};
 use crate::parser;
 
 pub struct I2pRawSocket {
-    _session: I2pSession,
-    socket:   I2pDatagramSocket,
+    session: I2pSession,
+    socket:  I2pDatagramSocket,
 }
 
 pub struct I2pRepliableSocket {
-    _session: I2pSession,
-    socket:   I2pDatagramSocket,
-    buffer:   Vec<u8>,
+    session: I2pSession,
+    socket:  I2pDatagramSocket,
+    buffer:  Vec<u8>,
 }
 
 impl I2pRawSocket {
@@ -24,7 +23,7 @@ impl I2pRawSocket {
         };
 
         // Session was created successfully, now create actual client socket
-        let socket = match I2pDatagramSocket::new_sock(port) {
+        let socket = match I2pDatagramSocket::new(port) {
             Ok(v)  => v,
             Err(e) => {
                 eprintln!("Failed to connect to the router: {:#?}", e);
@@ -33,24 +32,24 @@ impl I2pRawSocket {
         };
 
         Ok(I2pRawSocket {
-            _session: session,
+            session: session,
             socket:  socket,
         })
     }
 
     /// Get the destination of this session
     pub fn get_local_dest(&self) -> &str {
-        return &self._session.local;
+        return &self.session.local;
     }
 
     /// Get the nickname assigned to this session
     pub fn get_nick(&self) -> &str {
-        return &self._session.nick;
+        return &self.session.nick;
     }
 
     /// Write data to the I2P socket
     pub fn send_to(&mut self, buf: &[u8], dest: &str) -> Result<(), I2pError> {
-        let mut header = format!("3.0 {} {}\n", self._session.nick, dest)
+        let mut header = format!("3.0 {} {}\n", self.session.nick, dest)
             .as_bytes()
             .to_vec();
         header.extend_from_slice(buf);
@@ -72,7 +71,7 @@ impl I2pRepliableSocket {
         };
 
         // Session was created successfully, now create actual client socket
-        let socket = match I2pDatagramSocket::new_sock(port) {
+        let socket = match I2pDatagramSocket::new(port) {
             Ok(v)  => v,
             Err(e) => {
                 eprintln!("Failed to connect to the router: {:#?}", e);
@@ -81,7 +80,7 @@ impl I2pRepliableSocket {
         };
 
         Ok(I2pRepliableSocket {
-            _session: session,
+            session: session,
             socket:   socket,
             buffer:   vec![0; 65536],
         })
@@ -89,17 +88,17 @@ impl I2pRepliableSocket {
 
     /// Get the destination of this session
     pub fn get_local_dest(&self) -> &str {
-        return &self._session.local;
+        return &self.session.local;
     }
 
     /// Get the nickname assigned to this session
     pub fn get_nick(&self) -> &str {
-        return &self._session.nick;
+        return &self.session.nick;
     }
 
     /// Write data to the I2P socket
     pub fn send_to(&mut self, buf: &[u8], dest: &str) -> Result<(), I2pError> {
-        let mut header = format!("3.0 {} {}\n", self._session.nick, dest)
+        let mut header = format!("3.0 {} {}\n", self.session.nick, dest)
             .as_bytes()
             .to_vec();
         header.extend_from_slice(buf);
@@ -126,7 +125,7 @@ impl I2pRepliableSocket {
                         }
                     },
                     Err(e) => {
-                        println!("Failed to convert data to u8 for parser");
+                        println!("Failed to convert data to u8 for parser: {:#?}", e);
                         return Err(I2pError::InvalidValue);
                     }
                 }

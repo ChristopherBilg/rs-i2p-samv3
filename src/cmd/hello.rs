@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pControlSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::cmd::aux;
 
@@ -34,7 +34,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 }
 
 fn handshake_internal<T>(socket: &mut T, msg: &str) -> Result<(), I2pError>
-where T: I2pSocket
+where T: I2pControlSocket
 {
     match aux::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
@@ -45,10 +45,10 @@ where T: I2pSocket
 ///
 /// # Arguments
 ///
-/// `socket` - I2pSocket object created by the caller
+/// `socket` - I2pControlSocket object created by the caller
 ///
 pub fn handshake<T>(socket: &mut T) -> Result<(), I2pError>
-    where T: I2pSocket
+    where T: I2pControlSocket
 {
     handshake_internal(
         socket,
@@ -59,7 +59,7 @@ pub fn handshake<T>(socket: &mut T) -> Result<(), I2pError>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pSocket};
+    use crate::socket::{I2pStreamSocket, I2pControlSocket};
 
     #[test]
     fn test_handshake() {

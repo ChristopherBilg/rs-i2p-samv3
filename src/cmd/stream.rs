@@ -72,7 +72,7 @@ pub fn forward(socket: &mut I2pStreamSocket, nick: &str, port: u16) -> Result<()
 mod tests {
     use super::*;
     use crate::session::{I2pSession, SessionType};
-    use crate::socket::{I2pStreamSocket, I2pSocket};
+    use crate::socket::{I2pStreamSocket, I2pControlSocket};
     use crate::proto::stream::I2pStream;
     use std::thread;
     use std::time;

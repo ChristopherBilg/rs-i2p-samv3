@@ -56,7 +56,7 @@ pub fn lookup(socket: &mut I2pStreamSocket, addr: &str) -> Result<(String, Strin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pSocket};
+    use crate::socket::{I2pStreamSocket, I2pControlSocket};
     use crate::cmd::hello::*;
     use crate::session::*;
     use crate::error::I2pError;

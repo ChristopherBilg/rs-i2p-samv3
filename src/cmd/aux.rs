@@ -1,5 +1,5 @@
 use crate::error::I2pError;
-use crate::socket::I2pSocket;
+use crate::socket::I2pControlSocket;
 use crate::parser::Message;
 
 /// exchange_msg() sends the specified message to the router and reads a response
@@ -23,7 +23,7 @@ pub fn exchange_msg<T>(
     msg:    &str,
     parser: &dyn Fn(&str) -> Result<Vec<(String, String)>, I2pError>)
     -> Result<Vec<(String, String)>, I2pError>
-    where T: I2pSocket
+    where T: I2pControlSocket
 {
     match socket.write_cmd(&msg.to_string()) {
         Ok(_)  => { },

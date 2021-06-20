@@ -71,7 +71,7 @@ pub fn create(socket: &mut I2pStreamSocket, stype: &SessionType, nick: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pSocket};
+    use crate::socket::{I2pStreamSocket, I2pControlSocket};
 
     #[test]
     fn test_create_session() {

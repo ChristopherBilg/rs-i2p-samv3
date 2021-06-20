@@ -2,7 +2,7 @@ use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 
 use crate::error::I2pError;
-use crate::socket::{I2pStreamSocket, I2pSocket};
+use crate::socket::I2pStreamSocket;
 use crate::cmd::*;
 
 pub enum SessionType {

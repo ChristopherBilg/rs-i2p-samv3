@@ -7,7 +7,6 @@ use crate::cmd::hello;
 
 const SAM_TCP_PORT: u16  = 7656;
 const SAM_UDP_PORT: u16  = 7655;
-const RI2P_UDP_PORT: u16 = 17655;
 
 pub struct I2pDatagramSocket {
     socket: UdpSocket,
@@ -18,20 +17,11 @@ pub struct I2pStreamSocket {
     reader: BufReader<TcpStream>,
 }
 
-pub trait I2pSocket: Sized {
-    fn new() -> Result<Self, I2pError>;
-    fn new_sock(port: u16) -> Result<Self, I2pError>;
-    fn connected() -> Result<Self, I2pError>;
+pub trait I2pControlSocket: Sized {
     fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError>;
     fn write_cmd(&mut self, buf: &String) -> Result<(), I2pError>;
     fn write(&mut self, buf: &[u8]) -> Result<(), I2pError>;
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, I2pError>;
-}
-
-pub trait Streamable {
-    fn read_line(&mut self, _buf: &mut String) -> Result<usize, I2pError>;
-    fn read_to_string(&mut self, _buf: &mut String) -> Result<usize, I2pError>;
-    fn read_exact(&mut self, _buf: &mut [u8]) -> Result<(), I2pError>;
 }
 
 fn udp_socket(host: &str, port: u16) -> Result<I2pDatagramSocket, I2pError> {
@@ -81,24 +71,27 @@ fn tcp_socket(host: &str, port: u16) -> Result<I2pStreamSocket, I2pError> {
     });
 }
 
-impl I2pSocket for I2pDatagramSocket{
+impl I2pDatagramSocket {
 
-    fn new() -> Result<Self, I2pError> {
-        match udp_socket("127.0.0.1", RI2P_UDP_PORT) {
-            Ok(v)  => Ok(v),
-            Err(e) => Err(e),
-        }
-    }
-
-    fn new_sock(port: u16) -> Result<Self, I2pError> {
+    pub fn new(port: u16) -> Result<Self, I2pError> {
         match udp_socket("127.0.0.1", port) {
             Ok(v)  => Ok(v),
             Err(e) => Err(e),
         }
     }
+}
 
-    fn connected() -> Result<Self, I2pError> {
-        let mut socket = match udp_socket("127.0.0.1", RI2P_UDP_PORT) {
+impl I2pStreamSocket {
+
+    pub fn new() -> Result<I2pStreamSocket, I2pError> {
+        match tcp_socket("127.0.0.1", SAM_TCP_PORT) {
+            Ok(v)  => Ok(v),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn connected() -> Result<I2pStreamSocket, I2pError> {
+        let mut socket = match tcp_socket("127.0.0.1", SAM_TCP_PORT) {
             Ok(v)  => v,
             Err(e) => return Err(e),
         };
@@ -108,6 +101,56 @@ impl I2pSocket for I2pDatagramSocket{
             Err(e) => return Err(e),
         }
     }
+
+    /// See documentation for BufReader::read_line()
+    pub fn read_line(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+        match self.reader.read_line(buf) {
+            Ok(nread)  => {
+                if nread == 0 {
+                    eprintln!("Received 0 bytes from the router");
+                    return Err(I2pError::TcpStreamError);
+                }
+                return Ok(nread);
+            }
+            Err(e) => {
+                eprintln!("Failed to receive TCP data: {}", e);
+                return Err(I2pError::TcpStreamError);
+            }
+        }
+    }
+
+    /// See documentation for Read::read_to_string()
+    pub fn read_to_string(&mut self, buf: &mut String) -> Result<usize, I2pError> {
+        match self.reader.read_to_string(buf) {
+            Ok(nread)  => {
+                if nread == 0 {
+                    eprintln!("Received 0 bytes from the router");
+                    return Err(I2pError::TcpStreamError);
+                }
+                return Ok(nread);
+            }
+            Err(e) => {
+                eprintln!("Failed to receive TCP data: {}", e);
+                return Err(I2pError::TcpStreamError);
+            }
+        }
+    }
+
+    /// See documentation for Read::read_exact()
+    pub fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), I2pError> {
+        match self.reader.read_exact(buf) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Failed to receive TCP data: {}", e);
+                return Err(I2pError::TcpStreamError);
+            }
+        }
+    }
+}
+
+impl I2pControlSocket for I2pDatagramSocket{
 
     fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError> {
         let bytes = unsafe { buf.as_bytes_mut() };
@@ -166,30 +209,7 @@ impl I2pSocket for I2pDatagramSocket{
     }
 }
 
-impl I2pSocket for I2pStreamSocket {
-
-    fn new() -> Result<I2pStreamSocket, I2pError> {
-        match tcp_socket("127.0.0.1", SAM_TCP_PORT) {
-            Ok(v)  => Ok(v),
-            Err(e) => Err(e),
-        }
-    }
-
-    fn new_sock(port: u16) -> Result<Self, I2pError> {
-        todo!();
-    }
-
-    fn connected() -> Result<I2pStreamSocket, I2pError> {
-        let mut socket = match tcp_socket("127.0.0.1", SAM_TCP_PORT) {
-            Ok(v)  => v,
-            Err(e) => return Err(e),
-        };
-
-        match hello::handshake(&mut socket) {
-            Ok(_)  => { Ok(socket) },
-            Err(e) => return Err(e),
-        }
-    }
+impl I2pControlSocket for I2pStreamSocket {
 
     /// See documentation for BufReader::read_line()
     fn read_cmd(&mut self, buf: &mut String) -> Result<usize, I2pError> {
@@ -264,56 +284,6 @@ impl I2pSocket for I2pStreamSocket {
                     return Err(I2pError::TcpStreamError);
                 }
                 return Ok(nread);
-            }
-            Err(e) => {
-                eprintln!("Failed to receive TCP data: {}", e);
-                return Err(I2pError::TcpStreamError);
-            }
-        }
-    }
-}
-
-impl Streamable for I2pStreamSocket {
-
-    /// See documentation for BufReader::read_line()
-    fn read_line(&mut self, buf: &mut String) -> Result<usize, I2pError> {
-        match self.reader.read_line(buf) {
-            Ok(nread)  => {
-                if nread == 0 {
-                    eprintln!("Received 0 bytes from the router");
-                    return Err(I2pError::TcpStreamError);
-                }
-                return Ok(nread);
-            }
-            Err(e) => {
-                eprintln!("Failed to receive TCP data: {}", e);
-                return Err(I2pError::TcpStreamError);
-            }
-        }
-    }
-
-    /// See documentation for Read::read_to_string()
-    fn read_to_string(&mut self, buf: &mut String) -> Result<usize, I2pError> {
-        match self.reader.read_to_string(buf) {
-            Ok(nread)  => {
-                if nread == 0 {
-                    eprintln!("Received 0 bytes from the router");
-                    return Err(I2pError::TcpStreamError);
-                }
-                return Ok(nread);
-            }
-            Err(e) => {
-                eprintln!("Failed to receive TCP data: {}", e);
-                return Err(I2pError::TcpStreamError);
-            }
-        }
-    }
-
-    /// See documentation for Read::read_exact()
-    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), I2pError> {
-        match self.reader.read_exact(buf) {
-            Ok(_) => {
-                return Ok(());
             }
             Err(e) => {
                 eprintln!("Failed to receive TCP data: {}", e);
