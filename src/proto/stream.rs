@@ -9,7 +9,7 @@ pub struct I2pStream {
 }
 
 fn new() -> Result<I2pStream, I2pError> {
-    let session = match I2pSession::new(SessionType::VirtualStream) {
+    let session = match I2pSession::stream() {
         Ok(v)  => v,
         Err(e) => return Err(e),
     };

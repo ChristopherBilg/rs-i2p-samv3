@@ -19,17 +19,8 @@ pub struct I2pSession {
 
 impl I2pSession {
 
-    /// Start a new session with the I2P router
-    ///
-    /// Connect to the router via the default SAM gateway (localhost:7656)
-    /// and create a control socket, which is used to create the actual session,
-    /// and a nickname for the client (random alphanumeric string)
-    ///
-    /// # Arguments
-    ///
-    /// `stype` - Session type: Virtual stream, Repliable or Anonymous datagram
-    ///
-    pub fn new(stype: SessionType) -> Result<I2pSession, I2pError> {
+    /// Create new I2P session for a virtual stream
+    pub fn stream() -> Result<I2pSession, I2pError> {
 
         let mut socket = match I2pStreamSocket::connected() {
             Ok(v)  => v,
@@ -46,8 +37,8 @@ impl I2pSession {
             .map(char::from)
             .collect();
 
-        // create a new session of type "stype"
-        match session::create(&mut socket, &stype, &nick) {
+        // create a new virtual stream session
+        match session::stream(&mut socket, &nick) {
             Ok(_)  => {},
             Err(e) => return Err(e),
         }
@@ -70,7 +61,8 @@ impl I2pSession {
         })
     }
 
-    pub fn new_socket(stype: SessionType, port: u16) -> Result<I2pSession, I2pError> {
+    /// Create a new I2P session for an anonymous/repliable datagram
+    pub fn datagram(stype: SessionType, port: u16) -> Result<I2pSession, I2pError> {
 
         let mut socket = match I2pStreamSocket::connected() {
             Ok(v)  => v,
@@ -88,7 +80,7 @@ impl I2pSession {
             .collect();
 
         // create a new session of type "stype"
-        match session::create_dgram(&mut socket, &stype, &nick, port) {
+        match session::datagram(&mut socket, &stype, &nick, port) {
             Ok(_)  => {},
             Err(e) => return Err(e),
         }
@@ -109,12 +101,6 @@ impl I2pSession {
             nick:   nick.to_string(),
             local:  dest.to_string(),
         })
-    }
-
-
-    /// TODO
-    pub fn destroy(&self) -> Result<(), I2pError> {
-        Ok(())
     }
 }
 

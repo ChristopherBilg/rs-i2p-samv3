@@ -33,7 +33,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     }
 }
 
-pub fn create_dgram(
+pub fn datagram(
     socket: &mut I2pStreamSocket,
     stype:  &SessionType,
     nick:   &str,
@@ -58,7 +58,7 @@ pub fn create_dgram(
     }
 }
 
-pub fn create(socket: &mut I2pStreamSocket, stype: &SessionType, nick: &str) -> Result<(), I2pError> {
+pub fn stream(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> {
 
     let msg = format!("SESSION CREATE STYLE=STREAM ID={} DESTINATION=TRANSIENT\n", nick);
 
@@ -78,7 +78,7 @@ mod tests {
         let mut socket = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
-            create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            stream(&mut socket, "rs-i2p-samv3-test"),
             Ok(())
         );
     }
@@ -92,12 +92,12 @@ mod tests {
         let mut socket = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
-            create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            stream(&mut socket, "rs-i2p-samv3-test"),
             Ok(())
         );
 
         assert_eq!(
-            create(&mut socket, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            stream(&mut socket, "rs-i2p-samv3-test"),
             Err(I2pError::Unknown),
         );
     }
@@ -110,12 +110,12 @@ mod tests {
         let mut socket2 = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
-            create(&mut socket1, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            stream(&mut socket1, "rs-i2p-samv3-test"),
             Ok(())
         );
 
         assert_eq!(
-            create(&mut socket2, &SessionType::VirtualStream, "rs-i2p-samv3-test"),
+            stream(&mut socket2, "rs-i2p-samv3-test"),
             Err(I2pError::Duplicate),
         );
     }

@@ -17,7 +17,7 @@ pub struct I2pRepliableSocket {
 impl I2pRawSocket {
 
     pub fn new(port: u16) -> Result<I2pRawSocket, I2pError> {
-        let session = match I2pSession::new_socket(SessionType::AnonymousDatagram, port) {
+        let session = match I2pSession::datagram(SessionType::AnonymousDatagram, port) {
             Ok(v)  => v,
             Err(e) => return Err(e),
         };
@@ -65,7 +65,7 @@ impl I2pRawSocket {
 impl I2pRepliableSocket {
 
     pub fn new(port: u16) -> Result<I2pRepliableSocket, I2pError> {
-        let session = match I2pSession::new_socket(SessionType::RepliableDatagram, port) {
+        let session = match I2pSession::datagram(SessionType::RepliableDatagram, port) {
             Ok(v)  => v,
             Err(e) => return Err(e),
         };
