@@ -68,9 +68,8 @@ pub struct Message<'a> {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct DatagramHeader<'a> {
-    pub dest:     &'a str,
-    // values:   Option<KeyValuePair<'a>>,
-    // datagram: Vec<u8>,
+    pub dest: &'a str,
+    values:   Option<KeyValuePair<'a>>,
 }
 
 impl Message<'_> {
@@ -121,8 +120,22 @@ pub fn short_value<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     )
 }
 
+pub fn canonical_key<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
+    T: InputTakeAtPosition,
+    <T as InputTakeAtPosition>::Item: AsChar + Copy,
+    <T as InputTakeAtPosition>::Item: IsChar + Copy,
+{
+    i.split_at_position1_complete(
+        |item| {
+            let char_item = item.as_char();
+            !(char_item == '_') && !(nom_unicode::is_alphanumeric(item))
+        },
+        ErrorKind::AlphaNumeric,
+    )
+}
+
 fn whitespace<'a>(i: &'a str) -> Res<&'a str, &'a str> {
-    take_while(move |c| " \t\r\n".contains(c))(i)
+    take_while(move |c| " \t\r".contains(c))(i)
 }
 
 fn parse_str<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
@@ -130,7 +143,7 @@ fn parse_str<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str
 }
 
 fn key<'a>(i: &'a str) -> Res<&'a str, &'a str> {
-    escaped(alphanumeric1, '\\', one_of("\"n\\"))(i)
+    escaped(canonical_key, '\\', one_of("\"n\\"))(i)
 }
 
 fn value<'a>(i: &'a str) -> Res<&'a str, &'a str> {
@@ -221,8 +234,8 @@ fn parse_header_internal(input: &str) -> Res<&str, DatagramHeader> {
         "header",
         tuple((
             value,
-            // opt(whitespace),
-            // opt(values),
+            opt(whitespace),
+            opt(values),
             tag("\n")
         )),
     )(input)
@@ -231,6 +244,7 @@ fn parse_header_internal(input: &str) -> Res<&str, DatagramHeader> {
             next_input,
             DatagramHeader {
                 dest:    res.0,
+                values:  res.2
             },
         )
     })
@@ -465,6 +479,47 @@ mod tests {
                     ),
                 ]),
             })
+        );
+    }
+
+    #[test]
+    fn test_parse_header_valid1() {
+        assert_eq!(
+            parse_header(
+                "ABCDEFG FROM_PORT=7777 TO_PORT=8888\nHello, world!",
+            ),
+            Ok((
+                DatagramHeader {
+                    dest:   "ABCDEFG",
+                    values: Some(vec![
+                        (
+                            "FROM_PORT",
+                            "7777",
+                        ),
+                        (
+                            "TO_PORT",
+                            "8888",
+                        ),
+                    ]),
+                },
+                "Hello, world!"
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_header_valid2() {
+        assert_eq!(
+            parse_header(
+                "ABCDEFG\nHello, world!",
+            ),
+            Ok((
+                DatagramHeader {
+                    dest:   "ABCDEFG",
+                    values: None
+                },
+                "Hello, world!"
+            ))
         );
     }
 }
