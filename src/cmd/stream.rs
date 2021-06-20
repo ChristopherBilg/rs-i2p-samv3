@@ -1,7 +1,7 @@
 use crate::error::I2pError;
 use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
-use crate::cmd::aux;
+use crate::cmd::helper;
 
 fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 
@@ -13,7 +13,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
         }
     };
 
-    match aux::check_result(&parsed) {
+    match helper::check_result(&parsed) {
         Ok(_) => {
             Ok(Vec::new())
         },
@@ -36,7 +36,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 pub fn connect(socket: &mut I2pStreamSocket, nick: &str, host: &str) -> Result<(), I2pError> {
     let msg = format!("STREAM CONNECT ID={} DESTINATION={} SILENT=false\n", nick, host);
 
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
     }
@@ -52,7 +52,7 @@ pub fn connect(socket: &mut I2pStreamSocket, nick: &str, host: &str) -> Result<(
 pub fn accept(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> {
     let msg = format!("STREAM ACCEPT ID={} SILENT=false\n", nick);
 
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
     }
@@ -69,7 +69,7 @@ pub fn accept(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> 
 pub fn forward(socket: &mut I2pStreamSocket, nick: &str, port: u16) -> Result<(), I2pError> {
     let msg = format!("STREAM FORWARD ID={} PORT={} SILENT=false\n", nick, port);
 
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
     }

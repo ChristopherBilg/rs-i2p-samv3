@@ -1,7 +1,7 @@
 use crate::error::I2pError;
 use crate::socket::I2pControlSocket;
 use crate::parser::{Command, Subcommand, parse};
-use crate::cmd::aux;
+use crate::cmd::helper;
 
 static MIN_VERSION: &'static str = "3.1";
 static MAX_VERSION: &'static str = "3.1";
@@ -21,7 +21,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
         }
     };
 
-    match aux::check_result(&parsed) {
+    match helper::check_result(&parsed) {
         Ok(_) => {
             Ok(Vec::new())
         },
@@ -36,7 +36,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 fn handshake_internal<T>(socket: &mut T, msg: &str) -> Result<(), I2pError>
 where T: I2pControlSocket
 {
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
     }

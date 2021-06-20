@@ -1,7 +1,7 @@
 use crate::error::I2pError;
 use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
-use crate::cmd::aux;
+use crate::cmd::helper;
 
 /// Parse and validate router's SAMv3-compatible response
 ///
@@ -40,7 +40,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 }
 
 fn generate_internal(socket: &mut I2pStreamSocket, msg: &str) -> Result<(String, String), I2pError> {
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(v)  => Ok(v[0].clone()),
         Err(e) => Err(e),
     }

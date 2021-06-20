@@ -1,7 +1,7 @@
 use crate::error::I2pError;
 use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
-use crate::cmd::aux;
+use crate::cmd::helper;
 
 fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 
@@ -13,7 +13,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
         }
     };
 
-    match aux::check_result(&parsed) {
+    match helper::check_result(&parsed) {
         Ok(_)  => { },
         Err(e) => {
             eprintln!("Response did not contain RESULT=OK: {:#?}", e.0);
@@ -47,7 +47,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 pub fn lookup(socket: &mut I2pStreamSocket, addr: &str) -> Result<(String, String), I2pError> {
     let msg = format!("NAMING LOOKUP NAME={}\n", addr);
 
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(v)  => Ok(v[0].clone()),
         Err(e) => Err(e),
     }

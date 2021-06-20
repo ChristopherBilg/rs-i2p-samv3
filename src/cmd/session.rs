@@ -2,7 +2,7 @@ use crate::error::I2pError;
 use crate::socket::I2pStreamSocket;
 use crate::parser::{Command, Subcommand, parse};
 use crate::session::SessionType;
-use crate::cmd::aux;
+use crate::cmd::helper;
 
 /// Parse and validate router's SAMv3-compatible response
 ///
@@ -21,7 +21,7 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
         }
     };
 
-    match aux::check_result(&parsed) {
+    match helper::check_result(&parsed) {
         Ok(_) => {
             Ok(Vec::new())
         },
@@ -52,7 +52,7 @@ pub fn datagram(
         _ => todo!(),
     };
 
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
     }
@@ -62,7 +62,7 @@ pub fn stream(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> 
 
     let msg = format!("SESSION CREATE STYLE=STREAM ID={} DESTINATION=TRANSIENT\n", nick);
 
-    match aux::exchange_msg(socket, &msg, &parser) {
+    match helper::exchange_msg(socket, &msg, &parser) {
         Ok(_)  => Ok(()),
         Err(e) => Err(e),
     }
