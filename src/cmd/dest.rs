@@ -39,6 +39,13 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
     Ok(vec![(pubkey, privkey)])
 }
 
+fn generate_internal(socket: &mut I2pStreamSocket, msg: &str) -> Result<(String, String), I2pError> {
+    match aux::exchange_msg(socket, &msg, &parser) {
+        Ok(v)  => Ok(v[0].clone()),
+        Err(e) => Err(e),
+    }
+}
+
 /// Handshake with the router to establish initial connection
 ///
 /// # Arguments
@@ -46,21 +53,34 @@ fn parser(response: &str) -> Result<Vec<(String, String)>, I2pError> {
 /// `socket` - I2pStreamSocket object created by the caller
 ///
 pub fn generate(socket: &mut I2pStreamSocket) -> Result<(String, String), I2pError> {
-    let msg = format!("DEST GENERATE SIGNATURE_TYPE=7\n");
-
-    match aux::exchange_msg(socket, &msg, &parser) {
-        Ok(v)  => Ok(v[0].clone()),
-        Err(e) => Err(e),
-    }
+    generate_internal(socket, "DEST GENERATE SIGNATURE_TYPE=7\n")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pControlSocket};
+    use crate::socket::I2pStreamSocket;
 
     #[test]
-    fn test_gen_keys() {
-        assert!(true);
+    fn test_cmd_dest_generate() {
+        let mut socket = I2pStreamSocket::connected().unwrap();
+
+        match generate(&mut socket) {
+            Ok(_)  => assert!(true),
+            Err(e) => {
+                eprintln!("test_cmd_dest_generate: {:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_cmd_dest_generate_invalid() {
+        let mut socket = I2pStreamSocket::connected().unwrap();
+
+        match generate_internal(&mut socket,  "DEST GENERATE SIGNATURE_TYPE=13371338\n") {
+            Ok(_)  => assert!(false),
+            Err(_) => assert!(true),
+        }
     }
 }
