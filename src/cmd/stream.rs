@@ -58,7 +58,14 @@ pub fn accept(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> 
     }
 }
 
-/// TODO
+/// Notify that the router that an incoming virtual stream should use
+/// a local TCP listener instead of this socket
+///
+/// # Arguments
+/// `socket` - I2pStreamSocket object created by the caller
+/// `nick` - Nickname of the client, generated during I2pSession creation
+/// `port` - Port that the local TCP listener is listening to
+///
 pub fn forward(socket: &mut I2pStreamSocket, nick: &str, port: u16) -> Result<(), I2pError> {
     let msg = format!("STREAM FORWARD ID={} PORT={} SILENT=false\n", nick, port);
 
@@ -71,15 +78,16 @@ pub fn forward(socket: &mut I2pStreamSocket, nick: &str, port: u16) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::session::{I2pSession, SessionType};
-    use crate::socket::{I2pStreamSocket, I2pControlSocket};
+    use crate::session::I2pSession;
+    use crate::socket::I2pStreamSocket;
     use crate::proto::stream::I2pStream;
+    use std::net::TcpListener;
     use std::thread;
     use std::time;
 
     #[test]
-    fn test_connection() {
-        let session = I2pSession::new(SessionType::VirtualStream).unwrap();
+    fn test_cmd_stream_connection() {
+        let session = I2pSession::stream().unwrap();
         let mut socket = I2pStreamSocket::connected().unwrap();
 
         // valid nickname and host
@@ -103,7 +111,6 @@ mod tests {
 
     #[test]
     fn test_accept_invalid_nick() {
-        let session    = I2pSession::new(SessionType::VirtualStream).unwrap();
         let mut socket = I2pStreamSocket::connected().unwrap();
 
         // invalid nickname
@@ -114,14 +121,10 @@ mod tests {
     }
 
     #[test]
-    fn test_accept_server() {
-        let session    = I2pSession::new(SessionType::VirtualStream).unwrap();
+    fn test_cmd_stream_accept_server() {
+        let session    = I2pSession::stream().unwrap();
         let mut socket = I2pStreamSocket::connected().unwrap();
         let local_dest = session.nick.clone();
-
-        // spawn a thread for the client and notify the router
-        // that we're readyt to accept a peer connection
-        thread::spawn(move|| { client(local_dest) });
 
         assert_eq!(
             accept(&mut socket, &session.nick),
@@ -129,10 +132,15 @@ mod tests {
         );
     }
 
-    fn client(dest: String) {
-        std::thread::sleep(time::Duration::from_millis(2000));
-        let mut stream = I2pStream::new().unwrap();
+    #[test]
+    fn test_cmd_stream_forward_server() {
+        let session    = I2pSession::stream().unwrap();
+        let mut socket = I2pStreamSocket::connected().unwrap();
+        let local_dest = session.nick.clone();
 
-        stream.connect(&dest).unwrap();
+        assert_eq!(
+            forward(&mut socket, &session.nick, 8888),
+            Ok(()),
+        );
     }
 }
