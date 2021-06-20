@@ -71,14 +71,14 @@ pub fn stream(socket: &mut I2pStreamSocket, nick: &str) -> Result<(), I2pError> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pControlSocket};
+    use crate::socket::I2pStreamSocket;
 
     #[test]
-    fn test_create_session() {
+    fn test_cmd_session_create() {
         let mut socket = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
-            stream(&mut socket, "rs-i2p-samv3-test"),
+            stream(&mut socket, "nickname1"),
             Ok(())
         );
     }
@@ -87,36 +87,85 @@ mod tests {
     //
     // ignore for now as this takes several tens of seconds
     #[test]
-    #[ignore]
-    fn test_create_session_duplicate() {
+    fn test_cmd_session_create_duplicate() {
         let mut socket = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
-            stream(&mut socket, "rs-i2p-samv3-test"),
+            stream(&mut socket, "nickname2"),
             Ok(())
         );
 
         assert_eq!(
-            stream(&mut socket, "rs-i2p-samv3-test"),
-            Err(I2pError::Unknown),
+            stream(&mut socket, "nickname2"),
+            Err(I2pError::RouterError),
         );
     }
 
     // ignore for now as this takes several tens of seconds
     #[test]
-    #[ignore]
-    fn test_create_session_two_sockets_same_nick() {
+    fn test_cmd_session_create_session_two_sockets_same_nick() {
         let mut socket1 = I2pStreamSocket::connected().unwrap();
         let mut socket2 = I2pStreamSocket::connected().unwrap();
 
         assert_eq!(
-            stream(&mut socket1, "rs-i2p-samv3-test"),
+            stream(&mut socket1, "nickname3"),
             Ok(())
         );
 
         assert_eq!(
-            stream(&mut socket2, "rs-i2p-samv3-test"),
+            stream(&mut socket2, "nickname3"),
             Err(I2pError::Duplicate),
+        );
+    }
+
+    // try to create multiple datagram sessions for one session,
+    // only the first one should succeed
+    #[test]
+    fn test_cmd_session_dgram_two_connections() {
+        let mut socket = I2pStreamSocket::connected().unwrap();
+
+        assert_eq!(
+            datagram(&mut socket, &SessionType::AnonymousDatagram, "nickname4", 8888),
+            Ok(()),
+        );
+
+        assert_eq!(
+            datagram(&mut socket, &SessionType::AnonymousDatagram, "nickname4", 8888),
+            Err(I2pError::RouterError),
+        );
+
+        assert_eq!(
+            datagram(&mut socket, &SessionType::RepliableDatagram, "nickname4", 8888),
+            Err(I2pError::RouterError),
+        );
+
+        assert_eq!(
+            datagram(&mut socket, &SessionType::RepliableDatagram, "nickname4", 9999),
+            Err(I2pError::RouterError),
+        );
+    }
+
+
+    #[test]
+    fn test_cmd_session_dgram_two_sockets() {
+        let mut socket1 = I2pStreamSocket::connected().unwrap();
+        let mut socket2 = I2pStreamSocket::connected().unwrap();
+
+        assert_eq!(
+            datagram(&mut socket1, &SessionType::AnonymousDatagram, "nickname5", 8888),
+            Ok(()),
+        );
+
+        // same port should fail even if there are two sockets
+        assert_eq!(
+            datagram(&mut socket2, &SessionType::AnonymousDatagram, "nickname5", 8888),
+            Err(I2pError::Duplicate),
+        );
+
+        // same nick but different port should be okay
+        assert_eq!(
+            datagram(&mut socket2, &SessionType::AnonymousDatagram, "nickname5", 9999),
+            Ok(()),
         );
     }
 }
