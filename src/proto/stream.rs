@@ -148,13 +148,12 @@ impl I2pStream {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::proto::stream::I2pStream;
 
     #[test]
     fn test_stream_new() {
         match I2pStream::new() {
-            Ok(v) => {
+            Ok(_) => {
                 assert!(true);
             },
             Err(e) => {
@@ -187,7 +186,7 @@ mod tests {
             Ok(_) => {
                 assert!(false);
             },
-            Err(e) => {
+            Err(_) => {
                 assert!(true);
             }
         }

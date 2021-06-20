@@ -1,4 +1,3 @@
-use std::env;
 use std::thread;
 use std::time;
 
@@ -8,7 +7,6 @@ fn client(dest: String) {
     std::thread::sleep(time::Duration::from_millis(2000));
 
     let mut stream = ri2p::proto::stream::I2pStream::new().unwrap();
-
     stream.connect(&dest).unwrap();
 
     loop {

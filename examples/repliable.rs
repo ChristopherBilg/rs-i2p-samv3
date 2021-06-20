@@ -6,12 +6,11 @@
 //
 // Client then sends to the server's destination a datagram and the server
 // can receive both the datagram, its size but also the destination of the
-// sennder, in this case the client by calling recv_from().
+// sender, in this case the client's, by calling recv_from().
 //
 // Server then sends a datagram to the destination it got from recv_from()
 // and waits for another datagram from the client
 //
-use std::env;
 use std::thread;
 use std::time;
 
@@ -38,7 +37,7 @@ fn client(dest: String) {
 
 fn main() {
 
-    // when I2pRawSocket is created, the router is notified that we are listening
+    // when I2pRepliableSocket is created, the router is notified that we are listening
     // to port 7777 for incoming datagrams
     //
     // currently, ri2p does not support the legacy v1/v2 way of accepting
@@ -57,7 +56,7 @@ fn main() {
         // read response (# of bytes read and address of the remote peer)
         // from the socket and respond
         let (_, addr) = socket.recv_from(&mut buf).unwrap();
-        socket.send_to(msg.as_bytes(), &addr);
+        socket.send_to(msg.as_bytes(), &addr).unwrap();
 
         println!("client sent: '{:#?}'", std::str::from_utf8(&buf).unwrap());
     }

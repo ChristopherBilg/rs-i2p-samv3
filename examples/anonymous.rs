@@ -1,4 +1,3 @@
-use std::env;
 use std::thread;
 use std::time;
 
@@ -24,11 +23,11 @@ fn main() {
     //
     // Currently, ri2p does not support the legacy v1/v2 way of accepting
     // incoming datagrams where they are routed through the control socket.
+    //
     // That is why port must be provided.
     let mut socket = ri2p::proto::datagram::I2pRawSocket::new(7777).unwrap();
     let local_dest = socket.get_local_dest().to_string();
 
-    // spawn a thread for the client
     thread::spawn(move|| { client(local_dest) });
 
     println!("waiting for an incoming raw datagrams...");

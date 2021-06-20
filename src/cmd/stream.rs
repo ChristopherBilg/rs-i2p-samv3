@@ -80,10 +80,6 @@ mod tests {
     use super::*;
     use crate::session::I2pSession;
     use crate::socket::I2pStreamSocket;
-    use crate::proto::stream::I2pStream;
-    use std::net::TcpListener;
-    use std::thread;
-    use std::time;
 
     #[test]
     fn test_cmd_stream_connection() {
@@ -124,7 +120,6 @@ mod tests {
     fn test_cmd_stream_accept_server() {
         let session    = I2pSession::stream().unwrap();
         let mut socket = I2pStreamSocket::connected().unwrap();
-        let local_dest = session.nick.clone();
 
         assert_eq!(
             accept(&mut socket, &session.nick),
@@ -136,7 +131,6 @@ mod tests {
     fn test_cmd_stream_forward_server() {
         let session    = I2pSession::stream().unwrap();
         let mut socket = I2pStreamSocket::connected().unwrap();
-        let local_dest = session.nick.clone();
 
         assert_eq!(
             forward(&mut socket, &session.nick, 8888),

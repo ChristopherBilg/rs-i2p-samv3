@@ -85,7 +85,7 @@ pub fn check_result(response: &Message) -> Result<(), (I2pError, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::{Message, Command, Subcommand, parse};
+    use crate::parser::{Command, Subcommand, parse};
 
     #[test]
     fn test_get_message() {

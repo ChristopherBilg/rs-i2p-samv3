@@ -59,7 +59,7 @@ pub fn handshake<T>(socket: &mut T) -> Result<(), I2pError>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::socket::{I2pStreamSocket, I2pControlSocket};
+    use crate::socket::I2pStreamSocket;
 
     #[test]
     fn test_handshake() {

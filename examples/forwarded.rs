@@ -2,12 +2,10 @@
 // This example demonstrates how an I2P virtual stream can be
 // forwarded to a normal Rust socket server
 //
-use std::env;
 use std::thread;
 use std::time;
-use std::net::{TcpStream, TcpListener};
-use std::io::{BufReader, BufWriter, Write, BufRead, Read};
-use std::time::Duration;
+use std::net::TcpListener;
+use std::io::{BufReader, BufRead};
 
 extern crate ri2p;
 

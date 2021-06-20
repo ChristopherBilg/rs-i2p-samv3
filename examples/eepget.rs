@@ -1,11 +1,10 @@
 use std::env;
-
 extern crate ri2p;
 
+// usage: cargo run --example eepget -- <destination>
 fn main() {
 
     let args: Vec<String> = env::args().collect();
-
     let mut stream = ri2p::proto::stream::I2pStream::new().unwrap();
 
     stream.connect(&args[1]).unwrap();
