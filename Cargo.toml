@@ -1,6 +1,12 @@
 [package]
 name = "ri2p"
-version = "0.1.0"
+version = "1.0.0"
+authors = ["jzm2k <jzm2k@protonmail.com>"]
+description = "I2P SAMv3 client"
+license = "Zlib"
+readme = "README.md"
+homepage = "https://github.com/jzm2k/rs-i2p-samv3"
+repository = "https://github.com/jzm2k/rs-i2p-samv3"
 edition = "2018"
 
 [dependencies]
