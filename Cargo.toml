@@ -6,3 +6,4 @@ edition = "2018"
 [dependencies]
 nom = "6.1.2"
 rand = "0.8.3"
+nom-unicode = "^0.2"

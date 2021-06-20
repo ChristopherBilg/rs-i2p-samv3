@@ -9,6 +9,7 @@ use nom::{
     AsChar, IResult, InputTakeAtPosition,
 };
 use crate::error::I2pError;
+use nom_unicode::IsChar;
 
 type Res<T, U> = IResult<T, U, VerboseError<T>>;
 
@@ -56,13 +57,6 @@ impl From<&str> for Subcommand {
     }
 }
 
-// TODO add support for this enum
-#[derive(Debug, PartialOrd, PartialEq)]
-pub enum ValueType {
-    Str(String),
-    Double(f64),
-}
-
 pub type KeyValuePair<'a> = Vec<(&'a str, &'a str)>;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -73,7 +67,6 @@ pub struct Message<'a> {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-// pub struct Datagram<'a> {
 pub struct DatagramHeader<'a> {
     pub dest:     &'a str,
     // values:   Option<KeyValuePair<'a>>,
@@ -96,43 +89,44 @@ impl Message<'_> {
     }
 }
 
-// TODO add unicode support
-pub fn keyvalue_long<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
+pub fn long_value<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     T: InputTakeAtPosition,
-    <T as InputTakeAtPosition>::Item: AsChar,
+    <T as InputTakeAtPosition>::Item: AsChar + Copy,
+    <T as InputTakeAtPosition>::Item: IsChar + Copy,
 {
     i.split_at_position1_complete(
         |item| {
             let char_item = item.as_char();
-            !(char_item == '-') && !char_item.is_alphanum() && !(char_item == '.') &&
-            !(char_item == ' ') && !(char_item == '=') && !(char_item == '~') &&
-            !(char_item == '_')
-
+            !(char_item == '-') && !(char_item == '.') && !(char_item == ' ') &&
+            !(char_item == '=') && !(char_item == '~') && !(char_item == '_') &&
+            !(nom_unicode::is_alphanumeric(item))
         },
         ErrorKind::AlphaNumeric,
     )
 }
 
-pub fn keyvalue<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
+pub fn short_value<T, E: ParseError<T>>(i: T) -> IResult<T, T, E> where
     T: InputTakeAtPosition,
-    <T as InputTakeAtPosition>::Item: AsChar,
+    <T as InputTakeAtPosition>::Item: AsChar + Copy,
+    <T as InputTakeAtPosition>::Item: IsChar + Copy,
 {
     i.split_at_position1_complete(
         |item| {
             let char_item = item.as_char();
-            !(char_item == '.') && !char_item.is_alphanum() && !(char_item == '-') &&
-            !(char_item == '=') && !(char_item == '~') && !(char_item == '_')
+            !(char_item == '-') && !(char_item == '.') && !(char_item == '=') &&
+            !(char_item == '~') && !(char_item == '_') &&
+            !(nom_unicode::is_alphanumeric(item))
         },
         ErrorKind::AlphaNumeric,
     )
 }
 
 fn whitespace<'a>(i: &'a str) -> Res<&'a str, &'a str> {
-    take_while(move |c|  " \t\r\n".contains(c))(i)
+    take_while(move |c| " \t\r\n".contains(c))(i)
 }
 
 fn parse_str<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
-    escaped(keyvalue_long, '\\', one_of("\"n\\"))(i)
+    escaped(long_value, '\\', one_of("\"n\\"))(i)
 }
 
 fn key<'a>(i: &'a str) -> Res<&'a str, &'a str> {
@@ -140,7 +134,7 @@ fn key<'a>(i: &'a str) -> Res<&'a str, &'a str> {
 }
 
 fn value<'a>(i: &'a str) -> Res<&'a str, &'a str> {
-    escaped(keyvalue, '\\', one_of("\"n\\"))(i)
+    escaped(short_value, '\\', one_of("\"n\\"))(i)
 }
 
 fn value_quoted<'a>(i: &'a str) -> Res<&'a str, &'a str> {
@@ -420,69 +414,57 @@ mod tests {
         );
     }
 
-        #[test]
-        fn test_base64() {
-            assert_eq!(
-                parse(
-                    "DEST REPLY PUB=B9pegw5QkKt2NcN~OxyUrtrZBprhmZHeZRRE33V3s-RWd7Rhg2lerMpByNwM9S5Z3I96SPfFz5thlvzP7JmnXPT85IcAJ2eYg~e9EgipIfg4os49lBzrukQ3e~wJyIpkooSuV3rEyXR9zk9JlNBxmDJnYyRxYZedOK9sT8~ScKReHRDNC~Gb6RyEnlR4RItWVWAuUCDegoLxUh~idZj704MgHE5zio1QTbxMsgBumvXxNmDf5Irc9YpTnfvuKiKc4uOEyzN96t~zkgVMCz4ttMchzJSeqWRxvoqmHTkjuSrhJ0vE3ON-UVn1LU3e-9jVKq-GDj3bUTEnSC6WfKcivcypmv-s7DkkezFdpu3HEBYtcjkJf~AFnpXCL1S1F6gUoUbsLlCl9PDGpXYMBhS0rrLfOj4dCiAZC9zbTo3OTp60dwg5be4fXTW~CeCEXwGzlTZlc~4P~rYfOQ8Fzs5vprTsD79gKYlCs9kPwCDJL2Tfv-ggVLKXber32f5OHUmfBQAEAAcAAA== PRIV=PUcsXtuhfPem9Fmf--eHA~nLHXzk9xn21cK5LOSW6H3dy9chBXveC2jeiGo6ERsX9WhGpMwHYu6waNJtHUm6GKKuDrK9nTTyxX8DSjCXKyseNzvZmgjuHVieQzLlTBqOAMkNvTzKUnawuIL3u~PtLTHoqPRllr13g3x-vG5K8Ll38UrHsq6prf7TNN12SkyUJPg0SvM-Fy5sd8hg-n~TAut5YA2dU0-bsvSTycBdBULzfsz1QgmLdVwzi~zFKCdjoPDiwsyVSAz2votd2U6oPXy-qiGaPZAun3tEfz7pFOVC94ZWW~166O~aLsNfVdEhAyW0z1RrTx-zhyynAY64FeGwLJyr010u7aXopXfhCvb2QzU4tSSHEAGXqzQbcbB0ztdHviZHwJpP32B-ZE3sfpEWLE9h3yPtiWG7qYyyax6sN44GfSIAoeq1M0O4hJ3whA~yI5dtzz6Orf49Y2h-53uvHvpVIisGfzXbesvP71PoN-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
-                    Command::Dest,
-                    Some(Subcommand::Reply)
-                ),
-                Ok(Message {
-                    cmd:     Command::Dest,
-                    sub_cmd: Some(Subcommand::Reply),
-                    values:  Some(vec![
-                        (
-                            "PUB",
-                            "B9pegw5QkKt2NcN~OxyUrtrZBprhmZHeZRRE33V3s-RWd7Rhg2lerMpByNwM9S5Z3I96SPfFz5thlvzP7JmnXPT85IcAJ2eYg~e9EgipIfg4os49lBzrukQ3e~wJyIpkooSuV3rEyXR9zk9JlNBxmDJnYyRxYZedOK9sT8~ScKReHRDNC~Gb6RyEnlR4RItWVWAuUCDegoLxUh~idZj704MgHE5zio1QTbxMsgBumvXxNmDf5Irc9YpTnfvuKiKc4uOEyzN96t~zkgVMCz4ttMchzJSeqWRxvoqmHTkjuSrhJ0vE3ON-UVn1LU3e-9jVKq-GDj3bUTEnSC6WfKcivcypmv-s7DkkezFdpu3HEBYtcjkJf~AFnpXCL1S1F6gUoUbsLlCl9PDGpXYMBhS0rrLfOj4dCiAZC9zbTo3OTp60dwg5be4fXTW~CeCEXwGzlTZlc~4P~rYfOQ8Fzs5vprTsD79gKYlCs9kPwCDJL2Tfv-ggVLKXber32f5OHUmfBQAEAAcAAA==",
-                        ),
-                        (
-                            "PRIV",
-                            "PUcsXtuhfPem9Fmf--eHA~nLHXzk9xn21cK5LOSW6H3dy9chBXveC2jeiGo6ERsX9WhGpMwHYu6waNJtHUm6GKKuDrK9nTTyxX8DSjCXKyseNzvZmgjuHVieQzLlTBqOAMkNvTzKUnawuIL3u~PtLTHoqPRllr13g3x-vG5K8Ll38UrHsq6prf7TNN12SkyUJPg0SvM-Fy5sd8hg-n~TAut5YA2dU0-bsvSTycBdBULzfsz1QgmLdVwzi~zFKCdjoPDiwsyVSAz2votd2U6oPXy-qiGaPZAun3tEfz7pFOVC94ZWW~166O~aLsNfVdEhAyW0z1RrTx-zhyynAY64FeGwLJyr010u7aXopXfhCvb2QzU4tSSHEAGXqzQbcbB0ztdHviZHwJpP32B-ZE3sfpEWLE9h3yPtiWG7qYyyax6sN44GfSIAoeq1M0O4hJ3whA~yI5dtzz6Orf49Y2h-53uvHvpVIisGfzXbesvP71PoN-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
-                        ),
-                    ]),
-                })
-            );
-        }
+    #[test]
+    fn test_base64() {
+        assert_eq!(
+            parse(
+                "DEST REPLY PUB=B9pegw5QkKt2NcN~OxyUrtrZBprhmZHeZRRE33V3s-RWd7Rhg2lerMpByNwM9S5Z3I96SPfFz5thlvzP7JmnXPT85IcAJ2eYg~e9EgipIfg4os49lBzrukQ3e~wJyIpkooSuV3rEyXR9zk9JlNBxmDJnYyRxYZedOK9sT8~ScKReHRDNC~Gb6RyEnlR4RItWVWAuUCDegoLxUh~idZj704MgHE5zio1QTbxMsgBumvXxNmDf5Irc9YpTnfvuKiKc4uOEyzN96t~zkgVMCz4ttMchzJSeqWRxvoqmHTkjuSrhJ0vE3ON-UVn1LU3e-9jVKq-GDj3bUTEnSC6WfKcivcypmv-s7DkkezFdpu3HEBYtcjkJf~AFnpXCL1S1F6gUoUbsLlCl9PDGpXYMBhS0rrLfOj4dCiAZC9zbTo3OTp60dwg5be4fXTW~CeCEXwGzlTZlc~4P~rYfOQ8Fzs5vprTsD79gKYlCs9kPwCDJL2Tfv-ggVLKXber32f5OHUmfBQAEAAcAAA== PRIV=PUcsXtuhfPem9Fmf--eHA~nLHXzk9xn21cK5LOSW6H3dy9chBXveC2jeiGo6ERsX9WhGpMwHYu6waNJtHUm6GKKuDrK9nTTyxX8DSjCXKyseNzvZmgjuHVieQzLlTBqOAMkNvTzKUnawuIL3u~PtLTHoqPRllr13g3x-vG5K8Ll38UrHsq6prf7TNN12SkyUJPg0SvM-Fy5sd8hg-n~TAut5YA2dU0-bsvSTycBdBULzfsz1QgmLdVwzi~zFKCdjoPDiwsyVSAz2votd2U6oPXy-qiGaPZAun3tEfz7pFOVC94ZWW~166O~aLsNfVdEhAyW0z1RrTx-zhyynAY64FeGwLJyr010u7aXopXfhCvb2QzU4tSSHEAGXqzQbcbB0ztdHviZHwJpP32B-ZE3sfpEWLE9h3yPtiWG7qYyyax6sN44GfSIAoeq1M0O4hJ3whA~yI5dtzz6Orf49Y2h-53uvHvpVIisGfzXbesvP71PoN-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
+                Command::Dest,
+                Some(Subcommand::Reply)
+            ),
+            Ok(Message {
+                cmd:     Command::Dest,
+                sub_cmd: Some(Subcommand::Reply),
+                values:  Some(vec![
+                    (
+                        "PUB",
+                        "B9pegw5QkKt2NcN~OxyUrtrZBprhmZHeZRRE33V3s-RWd7Rhg2lerMpByNwM9S5Z3I96SPfFz5thlvzP7JmnXPT85IcAJ2eYg~e9EgipIfg4os49lBzrukQ3e~wJyIpkooSuV3rEyXR9zk9JlNBxmDJnYyRxYZedOK9sT8~ScKReHRDNC~Gb6RyEnlR4RItWVWAuUCDegoLxUh~idZj704MgHE5zio1QTbxMsgBumvXxNmDf5Irc9YpTnfvuKiKc4uOEyzN96t~zkgVMCz4ttMchzJSeqWRxvoqmHTkjuSrhJ0vE3ON-UVn1LU3e-9jVKq-GDj3bUTEnSC6WfKcivcypmv-s7DkkezFdpu3HEBYtcjkJf~AFnpXCL1S1F6gUoUbsLlCl9PDGpXYMBhS0rrLfOj4dCiAZC9zbTo3OTp60dwg5be4fXTW~CeCEXwGzlTZlc~4P~rYfOQ8Fzs5vprTsD79gKYlCs9kPwCDJL2Tfv-ggVLKXber32f5OHUmfBQAEAAcAAA==",
+                    ),
+                    (
+                        "PRIV",
+                        "PUcsXtuhfPem9Fmf--eHA~nLHXzk9xn21cK5LOSW6H3dy9chBXveC2jeiGo6ERsX9WhGpMwHYu6waNJtHUm6GKKuDrK9nTTyxX8DSjCXKyseNzvZmgjuHVieQzLlTBqOAMkNvTzKUnawuIL3u~PtLTHoqPRllr13g3x-vG5K8Ll38UrHsq6prf7TNN12SkyUJPg0SvM-Fy5sd8hg-n~TAut5YA2dU0-bsvSTycBdBULzfsz1QgmLdVwzi~zFKCdjoPDiwsyVSAz2votd2U6oPXy-qiGaPZAun3tEfz7pFOVC94ZWW~166O~aLsNfVdEhAyW0z1RrTx-zhyynAY64FeGwLJyr010u7aXopXfhCvb2QzU4tSSHEAGXqzQbcbB0ztdHviZHwJpP32B-ZE3sfpEWLE9h3yPtiWG7qYyyax6sN44GfSIAoeq1M0O4hJ3whA~yI5dtzz6Orf49Y2h-53uvHvpVIisGfzXbesvP71PoN-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
+                    ),
+                ]),
+            })
+        );
+    }
 
-        #[test]
-        fn test_parse_header_valid1() {
-            assert_eq!(
-                parse_header(
-                    "ABCDEFG FROMPORT=7777 TOPORT=8888\nHello, world!",
-                ),
-                Ok((
-                    DatagramHeader {
-                        dest:   "ABCDEFG",
-                        // values: Some(vec![
-                        //     (
-                        //         "FROMPORT",
-                        //         "7777",
-                        //     ),
-                        //     (
-                        //         "TOPORT",
-                        //         "8888",
-                        //     ),
-                        // ]),
-                    },
-                    "Hello, world!"
-                ))
-            );
-        }
-
-        #[test]
-        fn test_parse_header_valid2() {
-            assert_eq!(
-                parse_header(
-                    "ABCDEFG\nHello, world!",
-                ),
-                Ok((
-                    DatagramHeader {
-                        dest:   "ABCDEFG",
-                    },
-                    "Hello, world!"
-                ))
-            );
-        }
-
+    #[test]
+    fn test_parse_unicode() {
+        assert_eq!(
+            parse(
+                "DEST REPLY KEY=\"HELLOüüüüüüü\" KEY2=안--녕 PRIV=PUcsXtuhfPem9Fmf--eHA~nL-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
+                Command::Dest,
+                Some(Subcommand::Reply)
+            ),
+            Ok(Message {
+                cmd:     Command::Dest,
+                sub_cmd: Some(Subcommand::Reply),
+                values:  Some(vec![
+                    (
+                        "KEY",
+                        "HELLOüüüüüüü",
+                    ),
+                    (
+                        "KEY2",
+                        "안--녕",
+                    ),
+                    (
+                        "PRIV",
+                        "PUcsXtuhfPem9Fmf--eHA~nL-XB2XL9IOdip3xF4HpRBQAEAAcAAA==",
+                    ),
+                ]),
+            })
+        );
+    }
 }
