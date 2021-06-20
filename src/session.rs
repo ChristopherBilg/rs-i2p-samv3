@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_session_create_stream() {
-        match I2pSession::new(SessionType::VirtualStream) {
+        match I2pSession::stream() {
             Ok(_)  => assert!(true),
             Err(e) => {
                 eprintln!("{:#?}", e);
@@ -122,7 +122,18 @@ mod tests {
 
     #[test]
     fn test_session_create_raw() {
-        match I2pSession::new(SessionType::AnonymousDatagram) {
+        match I2pSession::datagram(SessionType::AnonymousDatagram, 8888) {
+            Ok(_)  => assert!(true),
+            Err(e) => {
+                eprintln!("{:#?}", e);
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn test_session_create_repliable() {
+        match I2pSession::datagram(SessionType::RepliableDatagram, 9999) {
             Ok(_)  => assert!(true),
             Err(e) => {
                 eprintln!("{:#?}", e);
