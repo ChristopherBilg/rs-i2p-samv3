@@ -1,4 +1,7 @@
-# ri2p
+# rs-i2p-samv3 #
+
+[![License](https://img.shields.io/badge/License-Zlib-blue.svg)](COPYING) [![Crates.io](https://img.shields.io/crates/v/ri2p.svg)](https://crates.io/crates/ri2p)
+
 
 I2P SAMv3 implementation written in Rust
 
